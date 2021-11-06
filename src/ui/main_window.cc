@@ -436,27 +436,27 @@ void MainWindow::CreateMenus() {
   render_menu->addAction(action_render_options_);
   menuBar()->addAction(render_menu->menuAction());
 
-  QMenu* extras_menu = new QMenu(tr("Extras"), this);
-  extras_menu->addAction(action_log_show_);
-  extras_menu->addAction(action_match_matrix_);
-  extras_menu->addAction(action_reconstruction_stats_);
-  extras_menu->addSeparator();
-  extras_menu->addAction(action_grab_image_);
-  extras_menu->addAction(action_grab_movie_);
-  extras_menu->addSeparator();
-  extras_menu->addAction(action_undistort_);
-  extras_menu->addAction(action_extract_colors_);
-  extras_menu->addSeparator();
-  extras_menu->addAction(action_set_options_);
-  extras_menu->addAction(action_reset_options_);
-  menuBar()->addAction(extras_menu->menuAction());
+  // QMenu* extras_menu = new QMenu(tr("Extras"), this);
+  // extras_menu->addAction(action_log_show_);
+  // extras_menu->addAction(action_match_matrix_);
+  // extras_menu->addAction(action_reconstruction_stats_);
+  // extras_menu->addSeparator();
+  // extras_menu->addAction(action_grab_image_);
+  // extras_menu->addAction(action_grab_movie_);
+  // extras_menu->addSeparator();
+  // extras_menu->addAction(action_undistort_);
+  // extras_menu->addAction(action_extract_colors_);
+  // extras_menu->addSeparator();
+  // extras_menu->addAction(action_set_options_);
+  // extras_menu->addAction(action_reset_options_);
+  // menuBar()->addAction(extras_menu->menuAction());
 
-  QMenu* help_menu = new QMenu(tr("Help"), this);
-  help_menu->addAction(action_about_);
-  help_menu->addAction(action_documentation_);
-  help_menu->addAction(action_support_);
-  help_menu->addAction(action_license_);
-  menuBar()->addAction(help_menu->menuAction());
+  // QMenu* help_menu = new QMenu(tr("Help"), this);
+  // help_menu->addAction(action_about_);
+  // help_menu->addAction(action_documentation_);
+  // help_menu->addAction(action_support_);
+  // help_menu->addAction(action_license_);
+  // menuBar()->addAction(help_menu->menuAction());
 
   // TODO: Make the native menu bar work on OSX. Simply setting this to true
   // will result in a menubar which is not clickable until the main window is
@@ -1308,14 +1308,14 @@ void MainWindow::DisableBlockingActions() {
 
 void MainWindow::UpdateWindowTitle() {
   if (*options_.project_path == "") {
-    setWindowTitle(QString::fromStdString("COLMAP"));
+    setWindowTitle(QString::fromStdString("三维重建系统"));
   } else {
     std::string project_title = *options_.project_path;
     if (project_title.size() > 80) {
       project_title =
           "..." + project_title.substr(project_title.size() - 77, 77);
     }
-    setWindowTitle(QString::fromStdString("COLMAP - " + project_title));
+    setWindowTitle(QString::fromStdString("三维重建系统 - " + project_title));
   }
 }
 

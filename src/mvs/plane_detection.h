@@ -1,3 +1,4 @@
+#include "util/ply.h"
 #include <cstdlib>
 #include <ctime>
 #include <float.h>
@@ -65,6 +66,7 @@ void IndiceToClustered(
 // Perform plane detection.
 bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
-                    const std::string& output_path);
+                    const std::string& output_path,
+                    std::vector<PlyPoint>& plane_points);
 }  // namespace mvs
 }  // namespace colmap

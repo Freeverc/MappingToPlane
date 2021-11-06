@@ -222,7 +222,8 @@ void IndiceToClustered(
 
 bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
-                    const std::string& output_path) {
+                    const std::string& output_path,
+                    std::vector<PlyPoint>& plane_points) {
   std::cout << "Point cloud measuring : " << std::endl;
   std::cout << "./point_cluster measuring or merge : "
                "(measure, merge)"
@@ -231,8 +232,8 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
   std::string point_cloud_path = input_path + "/fused.ply";
   std::string sampled_path = output_path + "/sampled.ply";
   std::string filtered_path = output_path + "/filtered.ply";
-  std::string inner_path = output_path + "/inner.ply";
-  std::string color_path = output_path + "/colored.ply";
+  std::string inner_path = output_path + "/plane_points.ply";
+  std::string color_path = output_path + "/cluster_points.ply";
 
   // Read point cloud.
   pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(
@@ -271,18 +272,16 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
   pcl::io::savePLYFileASCII(inner_path, *inner_point_cloud);
   pcl::io::savePLYFileASCII(color_path, *color_point_cloud);
 
-  // Visualizing.
-  // pcl::visualization::PCLVisualizer viewer("Cloud Viewer");
-  // // viewer.setBackgroundColor(0, 0, 0);
-  // viewer.addPointCloud(color_point_cloud, "inner");
-  // while (!viewer.wasStopped()) {
-  // }
-
-  // pcl::visualization::CloudViewer viewer("Cluster viewer");
-  // viewer.showCloud(color_point_cloud);
-  // while (!viewer.wasStopped()) {
-  // }
+  for (int i = 0; i < color_point_cloud->points.size(); i++) {
+    PlyPoint p;
+    p.x = color_point_cloud->points[i].x;
+    p.y = color_point_cloud->points[i].y;
+    p.z = color_point_cloud->points[i].z;
+    p.r = color_point_cloud->points[i].r;
+    p.g = color_point_cloud->points[i].g;
+    p.b = color_point_cloud->points[i].b;
+    plane_points.push_back(p);
+  }
 }
-
 }  // namespace mvs
 }  // namespace colmap

@@ -396,9 +396,29 @@ void DenseReconstructionWidget::PlaneDetection() {
     thread_control_widget_->StartFunction(
         "Plane Detection...", [this, workspace_path]() {
           mvs::PlaneDetectionOptions plane_detection_options;
+          std::vector<PlyPoint> plane_points;
+
           mvs::PlaneDetection(plane_detection_options, workspace_path,
-                              workspace_path);
+                              workspace_path, plane_points_);
           write_plane_points_action_->trigger();
+
+          // std::cout << "Point on plane : " << plane_points.size() <<
+          // std::endl; const size_t reconstruction_idx =
+          //     main_window_->reconstruction_manager_.Add();
+          // auto& reconstruction =
+          //     main_window_->reconstruction_manager_.Get(reconstruction_idx);
+
+          // for (const auto& point : plane_points) {
+          //   const Eigen::Vector3d xyz(point.x, point.y, point.z);
+          //   reconstruction.AddPoint3D(
+          //       xyz, Track(), Eigen::Vector3ub(point.r, point.g, point.b));
+          // }
+
+          // options_->render->min_track_len = 0;
+          // main_window_->reconstruction_manager_widget_->Update();
+          // main_window_->reconstruction_manager_widget_->SelectReconstruction(
+          //     reconstruction_idx);
+          // main_window_->RenderNow();
         });
   }
 }
@@ -601,15 +621,15 @@ void DenseReconstructionWidget::WriteFusedPoints() {
 }
 
 void DenseReconstructionWidget::WritePlanePoints() {
-  const std::string workspace_path =
-      workspace_path_text_->text().toUtf8().constData();
+  // const std::string workspace_path =
+  //     workspace_path_text_->text().toUtf8().constData();
 
-  std::vector<PlyPoint> plane_points =
-      ReadPly(JoinPaths(workspace_path, kPlanePointsFileName));
+  // std::vector<PlyPoint> plane_points =
+  //     ReadPly(JoinPaths(workspace_path, kPlaneClusterFileName));
 
-  if (workspace_path.empty() || !plane_points.size()) {
-    return;
-  }
+  // if (workspace_path.empty() || !plane_points.size()) {
+  //   return;
+  // }
 
   const int reply = QMessageBox::question(
       this, "",
@@ -625,7 +645,7 @@ void DenseReconstructionWidget::WritePlanePoints() {
     auto& reconstruction =
         main_window_->reconstruction_manager_.Get(reconstruction_idx);
 
-    for (const auto& point : plane_points) {
+    for (const auto& point : plane_points_) {
       const Eigen::Vector3d xyz(point.x, point.y, point.z);
       reconstruction.AddPoint3D(xyz, Track(),
                                 Eigen::Vector3ub(point.r, point.g, point.b));
