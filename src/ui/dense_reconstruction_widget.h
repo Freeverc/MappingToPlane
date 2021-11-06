@@ -62,6 +62,7 @@ class DenseReconstructionWidget : public QWidget {
   void Undistort();
   void Stereo();
   void Fusion();
+  void PlaneDetection();
   void PoissonMeshing();
   void DelaunayMeshing();
 
@@ -70,6 +71,7 @@ class DenseReconstructionWidget : public QWidget {
   void RefreshWorkspace();
 
   void WriteFusedPoints();
+  void WritePlanePoints();
   void ShowMeshingInfo();
 
   QWidget* GenerateTableButtonWidget(const std::string& image_name,
@@ -86,10 +88,12 @@ class DenseReconstructionWidget : public QWidget {
   QPushButton* undistortion_button_;
   QPushButton* stereo_button_;
   QPushButton* fusion_button_;
+  QPushButton* plane_detection_button_;
   QPushButton* poisson_meshing_button_;
   QPushButton* delaunay_meshing_button_;
   QAction* refresh_workspace_action_;
   QAction* write_fused_points_action_;
+  QAction* write_plane_points_action_;
   QAction* show_meshing_info_action_;
 
   bool photometric_done_;
