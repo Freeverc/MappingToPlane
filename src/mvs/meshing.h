@@ -49,7 +49,7 @@ struct PoissonMeshingOptions {
   // whose resolution is no larger than 2^d x 2^d x 2^d. Note that since the
   // reconstructor adapts the octree to the sampling density, the specified
   // reconstruction depth is only an upper bound.
-  int depth = 13;
+  int depth = 12;
 
   // If specified, the reconstruction code assumes that the input is equipped
   // with colors and will extrapolate the color values to the vertices of the
@@ -107,7 +107,6 @@ bool PoissonMeshing(const PoissonMeshingOptions& options,
                     const std::string& input_path,
                     const std::string& output_path);
 
-
 #ifdef CGAL_ENABLED
 
 // Delaunay meshing of sparse and dense COLMAP reconstructions. This is an
@@ -124,8 +123,8 @@ void SparseDelaunayMeshing(const DelaunayMeshingOptions& options,
                            const std::string& input_path,
                            const std::string& output_path);
 void DenseDelaunayMeshing(const DelaunayMeshingOptions& options,
-                           const std::string& input_path,
-                           const std::string& output_path);
+                          const std::string& input_path,
+                          const std::string& output_path);
 
 #endif  // CGAL_ENABLED
 

@@ -105,6 +105,7 @@ void plane_detection(pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
     if (y > max_y) max_y = y;
     if (z > max_z) max_z = z;
   }
+
   std::cout << "inner cloud : " << std::endl;
   std::cout << "Min : " << min_x << " " << min_y << " " << min_z << std::endl;
   std::cout << "Max : " << max_x << " " << max_y << " " << max_z << std::endl;
@@ -130,7 +131,8 @@ void plane_detection(pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
 void multi_plane_detection(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
     pcl::PointCloud<pcl::PointXYZL>::Ptr& inner_point_cloud,
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud,
+    std::vector<std::vector<float>>& plane_list) {
   pcl::PassThrough<pcl::PointXYZ> pass;
   pcl::PointCloud<pcl::PointXYZ>::Ptr org_point_cloud(
       new pcl::PointCloud<pcl::PointXYZ>);
@@ -194,6 +196,47 @@ void multi_plane_detection(
 
   IndiceToClustered(point_cloud, clusters, inner_point_cloud);
   colored_point_cloud = reg.getColoredCloud();
+
+  int c_id = 0;
+  for (std::vector<pcl::PointIndices>::const_iterator it = clusters.begin();
+       it != clusters.end(); ++it) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cluser(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    for (std::vector<int>::const_iterator pit = it->indices.begin();
+         pit != it->indices.end(); ++pit) {
+      pcl::PointXYZ p;
+      p.x = (*point_cloud)[*pit].x;
+      p.y = (*point_cloud)[*pit].y;
+      p.z = (*point_cloud)[*pit].z;
+      point_cluser->push_back(p);
+    }
+
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+
+    // Create the segmentation object
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setDistanceThreshold(0.2);
+
+    seg.setInputCloud(point_cluser);
+    seg.segment(*inliers, *coefficients);
+
+    plane_list.emplace_back(coefficients->values);
+
+    float a = coefficients->values[0];
+    float b = coefficients->values[1];
+    float c = coefficients->values[2];
+    float d = coefficients->values[3];
+    std::cout << "Cluster id : " << c_id << std::endl;
+    std::cout << "Cluster size : " << point_cluser->size() << std::endl;
+    std::cout << "Inner size : " << inliers->indices.size() << std::endl;
+    std::cout << "Model coefficients: " << a << " " << b << " " << c << " " << d
+              << std::endl;
+    ++c_id;
+  }
 }
 
 void IndiceToClustered(
@@ -223,7 +266,8 @@ void IndiceToClustered(
 bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
                     const std::string& output_path,
-                    std::vector<PlyPoint>& plane_points) {
+                    std::vector<PlyPoint>& plane_points,
+                    std::vector<std::vector<float>>& plane_list) {
   std::cout << "Point cloud measuring : " << std::endl;
   std::cout << "./point_cluster measuring or merge : "
                "(measure, merge)"
@@ -266,7 +310,8 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_point_cloud(
       new pcl::PointCloud<pcl::PointXYZRGB>);
   multi_plane_detection(filtered_point_cloud, inner_point_cloud,
-                        color_point_cloud);
+                        color_point_cloud, plane_list);
+
   std::cout << "Inner : " << inner_point_cloud->size() << std::endl;
   std::cout << "Color : " << color_point_cloud->size() << std::endl;
   pcl::io::savePLYFileASCII(inner_path, *inner_point_cloud);

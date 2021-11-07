@@ -184,7 +184,7 @@ DenseReconstructionOptionsWidget::DenseReconstructionOptionsWidget(
     : QWidget(parent) {
   setWindowFlags(Qt::Dialog);
   setWindowModality(Qt::ApplicationModal);
-  setWindowTitle("Dense reconstruction options");
+  setWindowTitle("稠密重建选项");
 
   QGridLayout* grid = new QGridLayout(this);
 
@@ -208,84 +208,105 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
       photometric_done_(false),
       geometric_done_(false) {
   setWindowFlags(Qt::Dialog);
-  setWindowModality(Qt::ApplicationModal);
-  setWindowTitle("Dense reconstruction");
-  resize(main_window_->size().width() - 20, main_window_->size().height() - 20);
+  setWindowModality(Qt::NonModal);
+  setWindowTitle("稠密重建");
+  // resize(main_window_->size().width() - 400,
+  //        main_window_->size().height() - 200);
 
   QGridLayout* grid = new QGridLayout(this);
 
-  undistortion_button_ = new QPushButton(tr("Undistortion"), this);
+  undistortion_button_ = new QPushButton(tr("去畸变"), this);
   connect(undistortion_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Undistort);
   grid->addWidget(undistortion_button_, 0, 0, Qt::AlignLeft);
 
-  stereo_button_ = new QPushButton(tr("Stereo"), this);
+  stereo_button_ = new QPushButton(tr("深度图重建"), this);
   connect(stereo_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Stereo);
   grid->addWidget(stereo_button_, 0, 1, Qt::AlignLeft);
 
-  fusion_button_ = new QPushButton(tr("Fusion"), this);
+  fusion_button_ = new QPushButton(tr("点云融合"), this);
   connect(fusion_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Fusion);
   grid->addWidget(fusion_button_, 0, 2, Qt::AlignLeft);
 
-  plane_detection_button_ = new QPushButton(tr("PlaneDetection"), this);
+  plane_detection_button_ = new QPushButton(tr("平面提取"), this);
   connect(plane_detection_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::PlaneDetection);
   grid->addWidget(plane_detection_button_, 0, 3, Qt::AlignLeft);
 
-  poisson_meshing_button_ = new QPushButton(tr("Poisson"), this);
-  connect(poisson_meshing_button_, &QPushButton::released, this,
-          &DenseReconstructionWidget::PoissonMeshing);
-  grid->addWidget(poisson_meshing_button_, 0, 4, Qt::AlignLeft);
-
-  delaunay_meshing_button_ = new QPushButton(tr("Delaunay"), this);
+  delaunay_meshing_button_ = new QPushButton(tr("德劳内重建"), this);
   connect(delaunay_meshing_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::DelaunayMeshing);
-  grid->addWidget(delaunay_meshing_button_, 0, 5, Qt::AlignLeft);
+  grid->addWidget(delaunay_meshing_button_, 0, 4, Qt::AlignLeft);
 
-  QPushButton* options_button = new QPushButton(tr("Options"), this);
+  poisson_meshing_button_ = new QPushButton(tr("泊松重建"), this);
+  connect(poisson_meshing_button_, &QPushButton::released, this,
+          &DenseReconstructionWidget::PoissonMeshing);
+  grid->addWidget(poisson_meshing_button_, 0, 5, Qt::AlignLeft);
+
+  QPushButton* options_button = new QPushButton(tr("选项"), this);
   connect(options_button, &QPushButton::released, options_widget_,
           &OptionsWidget::show);
   grid->addWidget(options_button, 0, 6, Qt::AlignLeft);
 
-  QLabel* workspace_path_label = new QLabel("Workspace", this);
+  QLabel* workspace_path_label = new QLabel("工作路径", this);
   grid->addWidget(workspace_path_label, 0, 7, Qt::AlignRight);
 
   workspace_path_text_ = new QLineEdit(this);
+  workspace_path_text_->setFixedSize(100, 25);
   grid->addWidget(workspace_path_text_, 0, 8, Qt::AlignRight);
   connect(workspace_path_text_, &QLineEdit::textChanged, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
 
-  QPushButton* refresh_path_button = new QPushButton(tr("Refresh"), this);
+  QPushButton* refresh_path_button = new QPushButton(tr("刷新"), this);
   connect(refresh_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
   grid->addWidget(refresh_path_button, 0, 9, Qt::AlignRight);
 
-  QPushButton* workspace_path_button = new QPushButton(tr("Select"), this);
+  QPushButton* workspace_path_button = new QPushButton(tr("选择"), this);
   connect(workspace_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::SelectWorkspacePath,
           Qt::QueuedConnection);
   grid->addWidget(workspace_path_button, 0, 10, Qt::AlignRight);
 
+  QPushButton* save_button = new QPushButton(tr("保存"), this);
+  grid->addWidget(save_button, 0, 11, Qt::AlignRight);
+
   QStringList table_header;
-  table_header << "image_name"
-               << ""
-               << "photometric"
-               << "geometric"
-               << "src_images";
+  table_header << "图像名称"
+               << "图像"
+               << "立体匹配";
 
-  table_widget_ = new QTableWidget(this);
-  table_widget_->setColumnCount(table_header.size());
-  table_widget_->setHorizontalHeaderLabels(table_header);
+  image_table_widget_ = new QTableWidget(this);
+  image_table_widget_->setColumnCount(table_header.size());
+  image_table_widget_->setHorizontalHeaderLabels(table_header);
 
-  table_widget_->setShowGrid(true);
-  table_widget_->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table_widget_->setSelectionMode(QAbstractItemView::SingleSelection);
-  table_widget_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  table_widget_->verticalHeader()->setDefaultSectionSize(25);
+  image_table_widget_->setShowGrid(true);
+  image_table_widget_->setSelectionBehavior(QAbstractItemView::SelectRows);
+  image_table_widget_->setSelectionMode(QAbstractItemView::SingleSelection);
+  image_table_widget_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  image_table_widget_->verticalHeader()->setDefaultSectionSize(25);
 
-  grid->addWidget(table_widget_, 1, 0, 1, 10);
+  QStringList plane_table_header;
+  plane_table_header << "a"
+                     << "b"
+                     << "c"
+                     << "d"
+                     << "平面";
+
+  plane_table_widget_ = new QTableWidget(this);
+  plane_table_widget_->setColumnCount(plane_table_header.size());
+  plane_table_widget_->setHorizontalHeaderLabels(plane_table_header);
+
+  plane_table_widget_->setShowGrid(true);
+  plane_table_widget_->setSelectionBehavior(QAbstractItemView::SelectRows);
+  plane_table_widget_->setSelectionMode(QAbstractItemView::SingleSelection);
+  plane_table_widget_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  plane_table_widget_->verticalHeader()->setDefaultSectionSize(25);
+
+  grid->addWidget(image_table_widget_, 1, 0, 1, 5);
+  grid->addWidget(plane_table_widget_, 1, 5, 1, 7);
 
   grid->setColumnStretch(4, 1);
 
@@ -399,26 +420,8 @@ void DenseReconstructionWidget::PlaneDetection() {
           std::vector<PlyPoint> plane_points;
 
           mvs::PlaneDetection(plane_detection_options, workspace_path,
-                              workspace_path, plane_points_);
+                              workspace_path, plane_points_, plane_list_);
           write_plane_points_action_->trigger();
-
-          // std::cout << "Point on plane : " << plane_points.size() <<
-          // std::endl; const size_t reconstruction_idx =
-          //     main_window_->reconstruction_manager_.Add();
-          // auto& reconstruction =
-          //     main_window_->reconstruction_manager_.Get(reconstruction_idx);
-
-          // for (const auto& point : plane_points) {
-          //   const Eigen::Vector3d xyz(point.x, point.y, point.z);
-          //   reconstruction.AddPoint3D(
-          //       xyz, Track(), Eigen::Vector3ub(point.r, point.g, point.b));
-          // }
-
-          // options_->render->min_track_len = 0;
-          // main_window_->reconstruction_manager_widget_->Update();
-          // main_window_->reconstruction_manager_widget_->SelectReconstruction(
-          //     reconstruction_idx);
-          // main_window_->RenderNow();
         });
   }
 }
@@ -491,8 +494,8 @@ std::string DenseReconstructionWidget::GetWorkspacePath() {
 }
 
 void DenseReconstructionWidget::RefreshWorkspace() {
-  table_widget_->clearContents();
-  table_widget_->setRowCount(0);
+  image_table_widget_->clearContents();
+  image_table_widget_->setRowCount(0);
 
   const std::string workspace_path =
       workspace_path_text_->text().toUtf8().constData();
@@ -530,7 +533,7 @@ void DenseReconstructionWidget::RefreshWorkspace() {
   }
 
   const auto images = ReadPatchMatchConfig(config_path);
-  table_widget_->setRowCount(images.size());
+  image_table_widget_->setRowCount(images.size());
 
   for (size_t i = 0; i < images.size(); ++i) {
     const std::string image_name = images[i].first;
@@ -539,28 +542,70 @@ void DenseReconstructionWidget::RefreshWorkspace() {
 
     QTableWidgetItem* image_name_item =
         new QTableWidgetItem(QString::fromStdString(image_name));
-    table_widget_->setItem(i, 0, image_name_item);
+    image_table_widget_->setItem(i, 0, image_name_item);
 
-    QPushButton* image_button = new QPushButton("Image");
+    QPushButton* image_button = new QPushButton("图像");
     connect(image_button, &QPushButton::released,
             [this, image_name, image_path]() {
               image_viewer_widget_->setWindowTitle(
                   QString("Image for %1").arg(image_name.c_str()));
               image_viewer_widget_->ReadAndShow(image_path);
             });
-    table_widget_->setCellWidget(i, 1, image_button);
+    image_table_widget_->setCellWidget(i, 1, image_button);
 
-    table_widget_->setCellWidget(
-        i, 2, GenerateTableButtonWidget(image_name, "photometric"));
-    table_widget_->setCellWidget(
-        i, 3, GenerateTableButtonWidget(image_name, "geometric"));
+    // table_widget_->setCellWidget(
+    //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));
+    image_table_widget_->setCellWidget(
+        i, 2, GenerateTableButtonWidget(image_name, "geometric"));
 
-    QTableWidgetItem* src_images_item =
-        new QTableWidgetItem(QString::fromStdString(src_images));
-    table_widget_->setItem(i, 4, src_images_item);
+    // QTableWidgetItem* src_images_item =
+    //     new QTableWidgetItem(QString::fromStdString(src_images));
+    // table_widget_->setItem(i, 3, src_images_item);
   }
 
-  table_widget_->resizeColumnsToContents();
+  plane_table_widget_->setRowCount(plane_list_.size());
+  for (size_t i = 0; i < plane_list_.size(); ++i) {
+    float a = plane_list_[i][0];
+    float b = plane_list_[i][1];
+    float c = plane_list_[i][2];
+    float d = plane_list_[i][3];
+
+    QTableWidgetItem* a_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(a)));
+    plane_table_widget_->setItem(i, 0, a_item);
+
+    QTableWidgetItem* b_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(b)));
+    plane_table_widget_->setItem(i, 1, b_item);
+
+    QTableWidgetItem* c_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(c)));
+    plane_table_widget_->setItem(i, 2, c_item);
+
+    QTableWidgetItem* d_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(d)));
+    plane_table_widget_->setItem(i, 3, d_item);
+
+    QPushButton* plane_button = new QPushButton("显示平面");
+    // connect(plane_button, &QPushButton::released,
+    //         [this, image_name, image_path]() {
+    //           image_viewer_widget_->setWindowTitle(
+    //               QString("Image for %1").arg(image_name.c_str()));
+    //           image_viewer_widget_->ReadAndShow(image_path);
+    //         });
+    plane_table_widget_->setCellWidget(i, 4, plane_button);
+
+    // table_widget_->setCellWidget(
+    //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));
+    // image_table_widget_->setCellWidget(
+    //     i, 2, GenerateTableButtonWidget(image_name, "geometric"));
+
+    // QTableWidgetItem* src_images_item =
+    //     new QTableWidgetItem(QString::fromStdString(src_images));
+    // table_widget_->setItem(i, 3, src_images_item);
+  }
+
+  image_table_widget_->resizeColumnsToContents();
 
   fusion_button_->setEnabled(photometric_done_ || geometric_done_);
 
@@ -658,6 +703,8 @@ void DenseReconstructionWidget::WritePlanePoints() {
     main_window_->RenderNow();
   }
 
+  RefreshWorkspace();
+
   // thread_control_widget_->StartFunction("Exporting...", [this,
   //                                                        workspace_path]() {
   //   const std::string output_path = JoinPaths(workspace_path,
@@ -699,7 +746,7 @@ QWidget* DenseReconstructionWidget::GenerateTableButtonWidget(
   QGridLayout* button_layout = new QGridLayout(button_widget);
   button_layout->setContentsMargins(0, 0, 0, 0);
 
-  QPushButton* depth_map_button = new QPushButton("Depth map", button_widget);
+  QPushButton* depth_map_button = new QPushButton("深度图", button_widget);
   if (ExistsFile(depth_map_path)) {
     connect(depth_map_button, &QPushButton::released,
             [this, image_name, depth_map_path]() {
@@ -719,7 +766,7 @@ QWidget* DenseReconstructionWidget::GenerateTableButtonWidget(
   }
   button_layout->addWidget(depth_map_button, 0, 1, Qt::AlignLeft);
 
-  QPushButton* normal_map_button = new QPushButton("Normal map", button_widget);
+  QPushButton* normal_map_button = new QPushButton("法向量图", button_widget);
   if (ExistsFile(normal_map_path)) {
     connect(normal_map_button, &QPushButton::released,
             [this, image_name, normal_map_path]() {

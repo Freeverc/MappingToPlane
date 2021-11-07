@@ -56,7 +56,8 @@ void plane_detection(pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
 void multi_plane_detection(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
     pcl::PointCloud<pcl::PointXYZL>::Ptr& inner_point_cloud,
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud,
+    std::vector<std::vector<float>>& plane_list);
 
 void IndiceToClustered(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
@@ -67,6 +68,7 @@ void IndiceToClustered(
 bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
                     const std::string& output_path,
-                    std::vector<PlyPoint>& plane_points);
+                    std::vector<PlyPoint>& plane_points,
+                    std::vector<std::vector<float>>& plane_list);
 }  // namespace mvs
 }  // namespace colmap

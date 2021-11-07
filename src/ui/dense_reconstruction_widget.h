@@ -84,7 +84,8 @@ class DenseReconstructionWidget : public QWidget {
   DenseReconstructionOptionsWidget* options_widget_;
   ImageViewerWidget* image_viewer_widget_;
   QLineEdit* workspace_path_text_;
-  QTableWidget* table_widget_;
+  QTableWidget* image_table_widget_;
+  QTableWidget* plane_table_widget_;
   QPushButton* undistortion_button_;
   QPushButton* stereo_button_;
   QPushButton* fusion_button_;
@@ -105,6 +106,7 @@ class DenseReconstructionWidget : public QWidget {
 
   std::vector<PlyPoint> fused_points_;
   std::vector<PlyPoint> plane_points_;
+  std::vector<std::vector<float>> plane_list_;
   std::vector<std::vector<int>> fused_points_visibility_;
 };
 

@@ -42,7 +42,9 @@ MainWindow::MainWindow(const OptionManager& options)
       thread_control_widget_(new ThreadControlWidget(this)),
       window_closed_(false) {
   std::setlocale(LC_NUMERIC, "C");
-  resize(1024, 600);
+  QDesktopWidget* pDesktopWidget = QApplication::desktop();
+  QRect deskRect = QApplication::desktop()->availableGeometry();
+  resize(deskRect.width(), deskRect.height());
   UpdateWindowTitle();
 
   CreateWidgets();
@@ -137,36 +139,36 @@ void MainWindow::CreateActions() {
   //////////////////////////////////////////////////////////////////////////////
 
   action_project_new_ =
-      new QAction(QIcon(":/media/project-new.png"), tr("New project"), this);
+      new QAction(QIcon(":/media/project-new.png"), tr("新建项目"), this);
   action_project_new_->setShortcuts(QKeySequence::New);
   connect(action_project_new_, &QAction::triggered, this,
           &MainWindow::ProjectNew);
 
   action_project_open_ =
-      new QAction(QIcon(":/media/project-open.png"), tr("Open project"), this);
+      new QAction(QIcon(":/media/project-open.png"), tr("打开项目"), this);
   action_project_open_->setShortcuts(QKeySequence::Open);
   connect(action_project_open_, &QAction::triggered, this,
           &MainWindow::ProjectOpen);
 
   action_project_edit_ =
-      new QAction(QIcon(":/media/project-edit.png"), tr("Edit project"), this);
+      new QAction(QIcon(":/media/project-edit.png"), tr("编辑项目"), this);
   connect(action_project_edit_, &QAction::triggered, this,
           &MainWindow::ProjectEdit);
 
   action_project_save_ =
-      new QAction(QIcon(":/media/project-save.png"), tr("Save project"), this);
+      new QAction(QIcon(":/media/project-save.png"), tr("保存项目"), this);
   action_project_save_->setShortcuts(QKeySequence::Save);
   connect(action_project_save_, &QAction::triggered, this,
           &MainWindow::ProjectSave);
 
-  action_project_save_as_ = new QAction(QIcon(":/media/project-save-as.png"),
-                                        tr("Save project as..."), this);
+  action_project_save_as_ =
+      new QAction(QIcon(":/media/project-save-as.png"), tr("另存为..."), this);
   action_project_save_as_->setShortcuts(QKeySequence::SaveAs);
   connect(action_project_save_as_, &QAction::triggered, this,
           &MainWindow::ProjectSaveAs);
 
   action_import_ =
-      new QAction(QIcon(":/media/import.png"), tr("Import model"), this);
+      new QAction(QIcon(":/media/import.png"), tr("导入稀疏模型"), this);
   connect(action_import_, &QAction::triggered, this, &MainWindow::Import);
   blocking_actions_.push_back(action_import_);
 
@@ -177,7 +179,7 @@ void MainWindow::CreateActions() {
   blocking_actions_.push_back(action_import_from_);
 
   action_export_ =
-      new QAction(QIcon(":/media/export.png"), tr("Export model"), this);
+      new QAction(QIcon(":/media/export.png"), tr("导出稀疏模型"), this);
   connect(action_export_, &QAction::triggered, this, &MainWindow::Export);
   blocking_actions_.push_back(action_export_);
 
@@ -193,12 +195,12 @@ void MainWindow::CreateActions() {
   blocking_actions_.push_back(action_export_as_);
 
   action_export_as_text_ = new QAction(QIcon(":/media/export-as-text.png"),
-                                       tr("Export model as text"), this);
+                                       tr("导出稀疏模型为文本"), this);
   connect(action_export_as_text_, &QAction::triggered, this,
           &MainWindow::ExportAsText);
   blocking_actions_.push_back(action_export_as_text_);
 
-  action_quit_ = new QAction(tr("Quit"), this);
+  action_quit_ = new QAction(tr("退出"), this);
   connect(action_quit_, &QAction::triggered, this, &MainWindow::close);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -206,20 +208,19 @@ void MainWindow::CreateActions() {
   //////////////////////////////////////////////////////////////////////////////
 
   action_feature_extraction_ = new QAction(
-      QIcon(":/media/feature-extraction.png"), tr("Feature extraction"), this);
+      QIcon(":/media/feature-extraction.png"), tr("特征提取"), this);
   connect(action_feature_extraction_, &QAction::triggered, this,
           &MainWindow::FeatureExtraction);
   blocking_actions_.push_back(action_feature_extraction_);
 
-  action_feature_matching_ = new QAction(QIcon(":/media/feature-matching.png"),
-                                         tr("Feature matching"), this);
+  action_feature_matching_ =
+      new QAction(QIcon(":/media/feature-matching.png"), tr("特征匹配"), this);
   connect(action_feature_matching_, &QAction::triggered, this,
           &MainWindow::FeatureMatching);
   blocking_actions_.push_back(action_feature_matching_);
 
-  action_database_management_ =
-      new QAction(QIcon(":/media/database-management.png"),
-                  tr("Database management"), this);
+  action_database_management_ = new QAction(
+      QIcon(":/media/database-management.png"), tr("图像管理"), this);
   connect(action_database_management_, &QAction::triggered, this,
           &MainWindow::DatabaseManagement);
   blocking_actions_.push_back(action_database_management_);
@@ -234,9 +235,8 @@ void MainWindow::CreateActions() {
   connect(action_automatic_reconstruction_, &QAction::triggered, this,
           &MainWindow::AutomaticReconstruction);
 
-  action_reconstruction_start_ =
-      new QAction(QIcon(":/media/reconstruction-start.png"),
-                  tr("Start reconstruction"), this);
+  action_reconstruction_start_ = new QAction(
+      QIcon(":/media/reconstruction-start.png"), tr("稀疏重建"), this);
   connect(action_reconstruction_start_, &QAction::triggered, this,
           &MainWindow::ReconstructionStart);
   blocking_actions_.push_back(action_reconstruction_start_);
@@ -256,9 +256,8 @@ void MainWindow::CreateActions() {
   action_reconstruction_pause_->setEnabled(false);
   blocking_actions_.push_back(action_reconstruction_pause_);
 
-  action_reconstruction_reset_ =
-      new QAction(QIcon(":/media/reconstruction-reset.png"),
-                  tr("Reset reconstruction"), this);
+  action_reconstruction_reset_ = new QAction(
+      QIcon(":/media/reconstruction-reset.png"), tr("重置稀疏重建"), this);
   connect(action_reconstruction_reset_, &QAction::triggered, this,
           &MainWindow::ReconstructionOverwrite);
 
@@ -269,9 +268,8 @@ void MainWindow::CreateActions() {
           &MainWindow::ReconstructionNormalize);
   blocking_actions_.push_back(action_reconstruction_normalize_);
 
-  action_reconstruction_options_ =
-      new QAction(QIcon(":/media/reconstruction-options.png"),
-                  tr("Reconstruction options"), this);
+  action_reconstruction_options_ = new QAction(
+      QIcon(":/media/reconstruction-options.png"), tr("稀疏重建选项"), this);
   connect(action_reconstruction_options_, &QAction::triggered, this,
           &MainWindow::ReconstructionOptions);
   blocking_actions_.push_back(action_reconstruction_options_);
@@ -283,9 +281,8 @@ void MainWindow::CreateActions() {
   action_bundle_adjustment_->setEnabled(false);
   blocking_actions_.push_back(action_bundle_adjustment_);
 
-  action_dense_reconstruction_ =
-      new QAction(QIcon(":/media/dense-reconstruction.png"),
-                  tr("Dense reconstruction"), this);
+  action_dense_reconstruction_ = new QAction(
+      QIcon(":/media/dense-reconstruction.png"), tr("稠密重建"), this);
   connect(action_dense_reconstruction_, &QAction::triggered, this,
           &MainWindow::DenseReconstruction);
 
@@ -293,18 +290,18 @@ void MainWindow::CreateActions() {
   // Render actions
   //////////////////////////////////////////////////////////////////////////////
 
-  action_render_toggle_ = new QAction(QIcon(":/media/render-enabled.png"),
-                                      tr("Disable rendering"), this);
+  action_render_toggle_ =
+      new QAction(QIcon(":/media/render-enabled.png"), tr("禁用渲染"), this);
   connect(action_render_toggle_, &QAction::triggered, this,
           &MainWindow::RenderToggle);
 
-  action_render_reset_view_ = new QAction(
-      QIcon(":/media/render-reset-view.png"), tr("Reset view"), this);
+  action_render_reset_view_ =
+      new QAction(QIcon(":/media/render-reset-view.png"), tr("重置"), this);
   connect(action_render_reset_view_, &QAction::triggered, model_viewer_widget_,
           &ModelViewerWidget::ResetView);
 
-  action_render_options_ = new QAction(QIcon(":/media/render-options.png"),
-                                       tr("Render options"), this);
+  action_render_options_ =
+      new QAction(QIcon(":/media/render-options.png"), tr("渲染选项"), this);
   connect(action_render_options_, &QAction::triggered, this,
           &MainWindow::RenderOptions);
 
@@ -391,46 +388,51 @@ void MainWindow::CreateActions() {
 }
 
 void MainWindow::CreateMenus() {
-  QMenu* file_menu = new QMenu(tr("File"), this);
+  QMenu* file_menu = new QMenu(tr("文件"), this);
   file_menu->addAction(action_project_new_);
   file_menu->addAction(action_project_open_);
   file_menu->addAction(action_project_edit_);
   file_menu->addAction(action_project_save_);
-  file_menu->addAction(action_project_save_as_);
+  // file_menu->addAction(action_project_save_as_);
   file_menu->addSeparator();
   file_menu->addAction(action_import_);
-  file_menu->addAction(action_import_from_);
+  // file_menu->addAction(action_import_from_);
   file_menu->addSeparator();
   file_menu->addAction(action_export_);
-  file_menu->addAction(action_export_all_);
-  file_menu->addAction(action_export_as_);
+  // file_menu->addAction(action_export_all_);
+  // file_menu->addAction(action_export_as_);
   file_menu->addAction(action_export_as_text_);
   file_menu->addSeparator();
   file_menu->addAction(action_quit_);
   menuBar()->addAction(file_menu->menuAction());
 
-  QMenu* preprocessing_menu = new QMenu(tr("Processing"), this);
+  QMenu* preprocessing_menu = new QMenu(tr("重建步骤"), this);
   preprocessing_menu->addAction(action_feature_extraction_);
   preprocessing_menu->addAction(action_feature_matching_);
   preprocessing_menu->addAction(action_database_management_);
+  preprocessing_menu->addSeparator();
+  preprocessing_menu->addAction(action_reconstruction_options_);
+  preprocessing_menu->addAction(action_reconstruction_start_);
+  preprocessing_menu->addSeparator();
+  preprocessing_menu->addAction(action_dense_reconstruction_);
   menuBar()->addAction(preprocessing_menu->menuAction());
 
-  QMenu* reconstruction_menu = new QMenu(tr("Reconstruction"), this);
-  reconstruction_menu->addAction(action_automatic_reconstruction_);
-  reconstruction_menu->addSeparator();
-  reconstruction_menu->addAction(action_reconstruction_start_);
-  reconstruction_menu->addAction(action_reconstruction_pause_);
-  reconstruction_menu->addAction(action_reconstruction_step_);
-  reconstruction_menu->addSeparator();
-  reconstruction_menu->addAction(action_reconstruction_reset_);
-  reconstruction_menu->addAction(action_reconstruction_normalize_);
-  reconstruction_menu->addAction(action_reconstruction_options_);
-  reconstruction_menu->addSeparator();
-  reconstruction_menu->addAction(action_bundle_adjustment_);
-  reconstruction_menu->addAction(action_dense_reconstruction_);
-  menuBar()->addAction(reconstruction_menu->menuAction());
+  // QMenu* reconstruction_menu = new QMenu(tr("Reconstruction"), this);
+  // reconstruction_menu->addAction(action_automatic_reconstruction_);
+  // reconstruction_menu->addSeparator();
+  // reconstruction_menu->addAction(action_reconstruction_start_);
+  // reconstruction_menu->addAction(action_reconstruction_pause_);
+  // reconstruction_menu->addAction(action_reconstruction_step_);
+  // reconstruction_menu->addSeparator();
+  // reconstruction_menu->addAction(action_reconstruction_reset_);
+  // reconstruction_menu->addAction(action_reconstruction_normalize_);
+  // reconstruction_menu->addAction(action_reconstruction_options_);
+  // reconstruction_menu->addSeparator();
+  // reconstruction_menu->addAction(action_bundle_adjustment_);
+  // reconstruction_menu->addAction(action_dense_reconstruction_);
+  // menuBar()->addAction(reconstruction_menu->menuAction());
 
-  QMenu* render_menu = new QMenu(tr("Render"), this);
+  QMenu* render_menu = new QMenu(tr("渲染"), this);
   render_menu->addAction(action_render_toggle_);
   render_menu->addAction(action_render_reset_view_);
   render_menu->addAction(action_render_options_);
@@ -472,30 +474,30 @@ void MainWindow::CreateToolbar() {
   file_toolbar_->addAction(action_project_save_);
   file_toolbar_->addAction(action_import_);
   file_toolbar_->addAction(action_export_);
-  file_toolbar_->setIconSize(QSize(16, 16));
+  file_toolbar_->setIconSize(QSize(32, 32));
 
   preprocessing_toolbar_ = addToolBar(tr("Processing"));
   preprocessing_toolbar_->addAction(action_feature_extraction_);
   preprocessing_toolbar_->addAction(action_feature_matching_);
   preprocessing_toolbar_->addAction(action_database_management_);
-  preprocessing_toolbar_->setIconSize(QSize(16, 16));
+  preprocessing_toolbar_->setIconSize(QSize(32, 32));
 
   reconstruction_toolbar_ = addToolBar(tr("Reconstruction"));
-  reconstruction_toolbar_->addAction(action_automatic_reconstruction_);
+  // reconstruction_toolbar_->addAction(action_automatic_reconstruction_);
   reconstruction_toolbar_->addAction(action_reconstruction_start_);
   reconstruction_toolbar_->addAction(action_reconstruction_step_);
-  reconstruction_toolbar_->addAction(action_reconstruction_pause_);
+  // reconstruction_toolbar_->addAction(action_reconstruction_pause_);
   reconstruction_toolbar_->addAction(action_reconstruction_options_);
-  reconstruction_toolbar_->addAction(action_bundle_adjustment_);
+  // reconstruction_toolbar_->addAction(action_bundle_adjustment_);
   reconstruction_toolbar_->addAction(action_dense_reconstruction_);
-  reconstruction_toolbar_->setIconSize(QSize(16, 16));
+  reconstruction_toolbar_->setIconSize(QSize(32, 32));
 
   render_toolbar_ = addToolBar(tr("Render"));
   render_toolbar_->addAction(action_render_toggle_);
   render_toolbar_->addAction(action_render_reset_view_);
   render_toolbar_->addAction(action_render_options_);
   render_toolbar_->addWidget(reconstruction_manager_widget_);
-  render_toolbar_->setIconSize(QSize(16, 16));
+  render_toolbar_->setIconSize(QSize(32, 32));
 
   extras_toolbar_ = addToolBar(tr("Extras"));
   extras_toolbar_->addAction(action_log_show_);
@@ -503,7 +505,7 @@ void MainWindow::CreateToolbar() {
   extras_toolbar_->addAction(action_reconstruction_stats_);
   extras_toolbar_->addAction(action_grab_image_);
   extras_toolbar_->addAction(action_grab_movie_);
-  extras_toolbar_->setIconSize(QSize(16, 16));
+  extras_toolbar_->setIconSize(QSize(32, 32));
 }
 
 void MainWindow::CreateStatusbar() {
@@ -1268,13 +1270,13 @@ void MainWindow::RenderToggle() {
     render_options_widget_->automatic_update = false;
     render_options_widget_->counter = 0;
     action_render_toggle_->setIcon(QIcon(":/media/render-disabled.png"));
-    action_render_toggle_->setText(tr("Enable rendering"));
+    action_render_toggle_->setText(tr("开启渲染"));
   } else {
     render_options_widget_->automatic_update = true;
     render_options_widget_->counter = 0;
     Render();
     action_render_toggle_->setIcon(QIcon(":/media/render-enabled.png"));
-    action_render_toggle_->setText(tr("Disable rendering"));
+    action_render_toggle_->setText(tr("禁用渲染"));
   }
 }
 
