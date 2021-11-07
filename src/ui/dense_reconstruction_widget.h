@@ -45,6 +45,10 @@ namespace colmap {
 
 class MainWindow;
 
+namespace mvs {
+struct Plane;
+}
+
 class DenseReconstructionOptionsWidget : public QWidget {
  public:
   DenseReconstructionOptionsWidget(QWidget* parent, OptionManager* options);
@@ -106,7 +110,7 @@ class DenseReconstructionWidget : public QWidget {
 
   std::vector<PlyPoint> fused_points_;
   std::vector<PlyPoint> plane_points_;
-  std::vector<std::vector<float>> plane_list_;
+  std::vector<mvs::Plane> plane_list_;
   std::vector<std::vector<int>> fused_points_visibility_;
 };
 

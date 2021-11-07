@@ -293,6 +293,8 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
                      << "b"
                      << "c"
                      << "d"
+                     << "theta"
+                     << "area"
                      << "平面";
 
   plane_table_widget_ = new QTableWidget(this);
@@ -306,7 +308,7 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
   plane_table_widget_->verticalHeader()->setDefaultSectionSize(25);
 
   grid->addWidget(image_table_widget_, 1, 0, 1, 5);
-  grid->addWidget(plane_table_widget_, 1, 5, 1, 7);
+  grid->addWidget(plane_table_widget_, 1, 5, 1, 10);
 
   grid->setColumnStretch(4, 1);
 
@@ -565,10 +567,12 @@ void DenseReconstructionWidget::RefreshWorkspace() {
 
   plane_table_widget_->setRowCount(plane_list_.size());
   for (size_t i = 0; i < plane_list_.size(); ++i) {
-    float a = plane_list_[i][0];
-    float b = plane_list_[i][1];
-    float c = plane_list_[i][2];
-    float d = plane_list_[i][3];
+    float a = plane_list_[i].para[0];
+    float b = plane_list_[i].para[1];
+    float c = plane_list_[i].para[2];
+    float d = plane_list_[i].para[3];
+    float theta = plane_list_[i].theta;
+    float area = plane_list_[i].area;
 
     QTableWidgetItem* a_item =
         new QTableWidgetItem(QString::fromStdString(std::to_string(a)));
@@ -586,12 +590,20 @@ void DenseReconstructionWidget::RefreshWorkspace() {
         new QTableWidgetItem(QString::fromStdString(std::to_string(d)));
     plane_table_widget_->setItem(i, 3, d_item);
 
+    QTableWidgetItem* theta_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(theta)));
+    plane_table_widget_->setItem(i, 4, theta_item);
+
+    QTableWidgetItem* area_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(area)));
+    plane_table_widget_->setItem(i, 5, area_item);
+
     QPushButton* plane_button = new QPushButton("显示平面");
     connect(plane_button, &QPushButton::released, [this, i, a, b, c, d]() {
       main_window_->model_viewer_widget_->ShowPlane(i, a, b, c, d);
     });
 
-    plane_table_widget_->setCellWidget(i, 4, plane_button);
+    plane_table_widget_->setCellWidget(i, 6, plane_button);
 
     // table_widget_->setCellWidget(
     //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));

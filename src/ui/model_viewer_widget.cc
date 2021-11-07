@@ -207,38 +207,40 @@ void BuildPlaneModel(const float a, const float b, const float c, const float d,
   float x = -d * a / s2;
   float y = -d * b / s2;
   float z = -d * c / s2;
-  float m = 5;
+  float m = 6;
+  float n = 8;
   float dx1, dy1, dz1, dx2, dy2, dz2;
   float h = std::sqrt(a * a + b * b);
   float s = std::sqrt(s2);
   if (fabs(c) < 0.0001) {
-    float sin_ab = std::abs(b) / h;
-    float cos_ab = std::abs(a) / h;
+    float sin_ab = b / h;
+    float cos_ab = a / h;
     dx1 = m * sin_ab;
-    dy1 = m * cos_ab;
+    dy1 = -m * cos_ab;
     dz1 = 0;
     dx2 = 0;
     dy2 = 0;
-    dz2 = m;
+    dz2 = n;
   } else {
-    float sin_ab = std::abs(b) / h;
-    float cos_ab = std::abs(a) / h;
-    float sin_z = std::abs(c) / s;
-    float cos_z = std::abs(h) / s;
+    float sin_ab = b / h;
+    float cos_ab = a / h;
+    float sin_z = c / s;
+    float cos_z = h / s;
     std::cout << sin_ab << " " << cos_ab << std::endl;
     std::cout << sin_z << " " << cos_z << std::endl;
     dx1 = m * sin_ab;
-    dy1 = m * cos_ab;
+    dy1 = -m * cos_ab;
     dz1 = 0;
-    dx2 = m * sin_z * cos_ab;
-    dy2 = m * sin_z * sin_ab;
-    dz2 = m * cos_z;
+    dx2 = n * sin_z * cos_ab;
+    dy2 = n * sin_z * sin_ab;
+    dz2 = -n * cos_z;
   }
 
   float d1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + dz1 * dz1);
   float d2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
-  std::cout << dx1 << " " << dy1 << " " << dz1 << std::endl;
-  std::cout << dx2 << " " << dy2 << " " << dz2 << std::endl;
+  std::cout << "xyz" << x << " " << y << " " << z << std::endl;
+  std::cout << "d1" << dx1 << " " << dy1 << " " << dz1 << std::endl;
+  std::cout << "d2" << dx2 << " " << dy2 << " " << dz2 << std::endl;
   std::cout << d1 << " " << d2 << std::endl;
 
   const Eigen::Vector3f p0 = Eigen::Vector3f(x, y, z);
@@ -246,9 +248,15 @@ void BuildPlaneModel(const float a, const float b, const float c, const float d,
   const Eigen::Vector3f p2 = Eigen::Vector3f(x + dx2, y + dy2, z + dz2);
   const Eigen::Vector3f p3 = Eigen::Vector3f(x - dx1, y - dy1, z - dz1);
   const Eigen::Vector3f p4 = Eigen::Vector3f(x - dx2, y - dy2, z - dz2);
+  float e0 = a * p0(0) + b * p0(1) + c * p0(2) + d;
+  float e1 = a * p1(0) + b * p1(1) + c * p1(2) + d;
+  float e2 = a * p2(0) + b * p2(1) + c * p2(2) + d;
+  float e3 = a * p3(0) + b * p3(1) + c * p3(2) + d;
+  float e4 = a * p4(0) + b * p4(1) + c * p4(2) + d;
+  std::cout << "5 e - " << e0 << " " << e1 << " " << e2 << " " << e3 << " "
+            << e4 << std::endl;
 
   // Image plane as two triangles.
-
   triangle1->point1 =
       PointPainter::Data(p1(0), p1(1), p1(2), plane_color(0), plane_color(1),
                          plane_color(2), plane_color(3));

@@ -132,7 +132,7 @@ void multi_plane_detection(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
     pcl::PointCloud<pcl::PointXYZL>::Ptr& inner_point_cloud,
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud,
-    std::vector<std::vector<float>>& plane_list) {
+    std::vector<Plane>& plane_list) {
   pcl::PassThrough<pcl::PointXYZ> pass;
   pcl::PointCloud<pcl::PointXYZ>::Ptr org_point_cloud(
       new pcl::PointCloud<pcl::PointXYZ>);
@@ -148,10 +148,6 @@ void multi_plane_detection(
   ne.setInputCloud(org_point_cloud);
   ne.setKSearch(20);
   ne.compute(*point_cloud_n);
-
-  // util::displayPC(viewer, source_pc, 1, 1, 1);
-  // viewer->addPointCloudNormals<PointXYZ, Normal>(source_pc, source_n, 64,
-  // 0.05, "NN");
 
   std::vector<pcl::PlanarRegion<pcl::PointXYZ>,
               Eigen::aligned_allocator<pcl::PlanarRegion<pcl::PointXYZ>>>
@@ -179,20 +175,6 @@ void multi_plane_detection(
 
   std::vector<pcl::PointIndices> clusters;
   reg.extract(clusters);
-  // int64 mps_start = cv::getTickCount();
-
-  // pcl::OrganizedMultiPlaneSegmentation<pcl::PointXYZ, pcl::Normal,
-  // pcl::Label> mps; mps.setAngularThreshold(pcl::deg2rad(10.0));
-  // mps.setMinInliers(1000);
-  // mps.setInputNormals(point_cloud_n);
-  // mps.setInputCloud(org_point_cloud);
-
-  // mps.segmentAndRefine(regions, model_coefficients, inlier_indices, labels,
-  //                      label_indices, boundary_indices);
-
-  // double mps_end = cv::getTickCount();
-  // PCL_WARN("MPS + Refine took: %f sec \n=== \n",
-  //          double(mps_end - mps_start) / cv::getTickFrequency());
 
   IndiceToClustered(point_cloud, clusters, inner_point_cloud);
   colored_point_cloud = reg.getColoredCloud();
@@ -202,6 +184,7 @@ void multi_plane_detection(
        it != clusters.end(); ++it) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr point_cluser(
         new pcl::PointCloud<pcl::PointXYZ>);
+    std::vector<PlyPoint> ply_points;
     for (std::vector<int>::const_iterator pit = it->indices.begin();
          pit != it->indices.end(); ++pit) {
       pcl::PointXYZ p;
@@ -209,6 +192,12 @@ void multi_plane_detection(
       p.y = (*point_cloud)[*pit].y;
       p.z = (*point_cloud)[*pit].z;
       point_cluser->push_back(p);
+
+      PlyPoint py;
+      py.x = (*point_cloud)[*pit].x;
+      py.y = (*point_cloud)[*pit].y;
+      py.z = (*point_cloud)[*pit].z;
+      ply_points.push_back(py);
     }
 
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -219,17 +208,29 @@ void multi_plane_detection(
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(0.2);
+    seg.setDistanceThreshold(0.002);
 
     seg.setInputCloud(point_cluser);
     seg.segment(*inliers, *coefficients);
-
-    plane_list.emplace_back(coefficients->values);
 
     float a = coefficients->values[0];
     float b = coefficients->values[1];
     float c = coefficients->values[2];
     float d = coefficients->values[3];
+
+    float s2 = a * a + b * b + c * c;
+    float s = std::sqrt(s2);
+    float sin_z = std::abs(c) / s;
+    float th = std::asin(sin_z) / M_PI * 180;
+
+    Plane pl;
+    pl.para = coefficients->values;
+    pl.theta = th;
+    pl.area = it->indices.size();
+    pl.inner_points = ply_points;
+
+    plane_list.emplace_back(pl);
+
     std::cout << "Cluster id : " << c_id << std::endl;
     std::cout << "Cluster size : " << point_cluser->size() << std::endl;
     std::cout << "Inner size : " << inliers->indices.size() << std::endl;
@@ -267,7 +268,7 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
                     const std::string& output_path,
                     std::vector<PlyPoint>& plane_points,
-                    std::vector<std::vector<float>>& plane_list) {
+                    std::vector<Plane>& plane_list) {
   std::cout << "Point cloud measuring : " << std::endl;
   std::cout << "./point_cluster measuring or merge : "
                "(measure, merge)"

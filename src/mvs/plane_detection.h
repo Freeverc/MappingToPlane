@@ -1,3 +1,6 @@
+#ifndef COLMAP_SRC_MVS_PLANE_DETECTION_H_
+#define COLMAP_SRC_MVS_PLANE_DETECTION_H_
+
 #include "util/ply.h"
 #include <cstdlib>
 #include <ctime>
@@ -26,6 +29,12 @@
 
 namespace colmap {
 namespace mvs {
+struct Plane {
+  std::vector<float> para;
+  float theta;
+  float area;
+  std::vector<PlyPoint> inner_points;
+};
 
 struct PlaneDetectionOptions {
   int num_neighbor = 30;
@@ -57,7 +66,7 @@ void multi_plane_detection(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
     pcl::PointCloud<pcl::PointXYZL>::Ptr& inner_point_cloud,
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr& colored_point_cloud,
-    std::vector<std::vector<float>>& plane_list);
+    std::vector<Plane>& plane_list);
 
 void IndiceToClustered(
     pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
@@ -69,6 +78,8 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& input_path,
                     const std::string& output_path,
                     std::vector<PlyPoint>& plane_points,
-                    std::vector<std::vector<float>>& plane_list);
+                    std::vector<Plane>& plane_list);
 }  // namespace mvs
 }  // namespace colmap
+
+#endif
