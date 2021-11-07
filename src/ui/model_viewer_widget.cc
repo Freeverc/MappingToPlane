@@ -188,6 +188,146 @@ void BuildImageModel(const Image& image, const Camera& camera,
                          frame_color(2), frame_color(3));
 }
 
+void BuildPlaneModel(const float a, const float b, const float c, const float d,
+                     const Eigen::Vector4f& plane_color,
+                     const Eigen::Vector4f& frame_color,
+                     TrianglePainter::Data* triangle1,
+                     TrianglePainter::Data* triangle2, LinePainter::Data* line1,
+                     LinePainter::Data* line2, LinePainter::Data* line3,
+                     LinePainter::Data* line4, LinePainter::Data* line5,
+                     LinePainter::Data* line6, LinePainter::Data* line7,
+                     LinePainter::Data* line8) {
+  // Projection center, top-left, top-right, bottom-right, bottom-left corners.
+
+  float s2 = a * a + b * b + c * c;
+  if (fabs(s2) < 0.000001) {
+    return;
+  }
+
+  float x = -d * a / s2;
+  float y = -d * b / s2;
+  float z = -d * c / s2;
+  float m = 5;
+  float dx1, dy1, dz1, dx2, dy2, dz2;
+  float h = std::sqrt(a * a + b * b);
+  float s = std::sqrt(s2);
+  if (fabs(c) < 0.0001) {
+    float sin_ab = std::abs(b) / h;
+    float cos_ab = std::abs(a) / h;
+    dx1 = m * sin_ab;
+    dy1 = m * cos_ab;
+    dz1 = 0;
+    dx2 = 0;
+    dy2 = 0;
+    dz2 = m;
+  } else {
+    float sin_ab = std::abs(b) / h;
+    float cos_ab = std::abs(a) / h;
+    float sin_z = std::abs(c) / s;
+    float cos_z = std::abs(h) / s;
+    std::cout << sin_ab << " " << cos_ab << std::endl;
+    std::cout << sin_z << " " << cos_z << std::endl;
+    dx1 = m * sin_ab;
+    dy1 = m * cos_ab;
+    dz1 = 0;
+    dx2 = m * sin_z * cos_ab;
+    dy2 = m * sin_z * sin_ab;
+    dz2 = m * cos_z;
+  }
+
+  float d1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + dz1 * dz1);
+  float d2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+  std::cout << dx1 << " " << dy1 << " " << dz1 << std::endl;
+  std::cout << dx2 << " " << dy2 << " " << dz2 << std::endl;
+  std::cout << d1 << " " << d2 << std::endl;
+
+  const Eigen::Vector3f p0 = Eigen::Vector3f(x, y, z);
+  const Eigen::Vector3f p1 = Eigen::Vector3f(x + dx1, y + dy1, z + dz1);
+  const Eigen::Vector3f p2 = Eigen::Vector3f(x + dx2, y + dy2, z + dz2);
+  const Eigen::Vector3f p3 = Eigen::Vector3f(x - dx1, y - dy1, z - dz1);
+  const Eigen::Vector3f p4 = Eigen::Vector3f(x - dx2, y - dy2, z - dz2);
+
+  // Image plane as two triangles.
+
+  triangle1->point1 =
+      PointPainter::Data(p1(0), p1(1), p1(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+  triangle1->point2 =
+      PointPainter::Data(p2(0), p2(1), p2(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+  triangle1->point3 =
+      PointPainter::Data(p3(0), p3(1), p3(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+
+  triangle2->point1 =
+      PointPainter::Data(p3(0), p3(1), p3(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+  triangle2->point2 =
+      PointPainter::Data(p4(0), p4(1), p4(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+  triangle2->point3 =
+      PointPainter::Data(p1(0), p1(1), p1(2), plane_color(0), plane_color(1),
+                         plane_color(2), plane_color(3));
+
+  // Frame around image plane and connecting lines to projection center.
+
+  line1->point1 =
+      PointPainter::Data(p1(0), p1(1), p1(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+  line1->point2 =
+      PointPainter::Data(p2(0), p2(1), p2(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+
+  line2->point1 =
+      PointPainter::Data(p2(0), p2(1), p2(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+  line2->point2 =
+      PointPainter::Data(p3(0), p3(1), p3(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+
+  line3->point1 =
+      PointPainter::Data(p3(0), p3(1), p3(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+  line3->point2 =
+      PointPainter::Data(p4(0), p4(1), p4(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+
+  line4->point1 =
+      PointPainter::Data(p4(0), p4(1), p4(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+  line4->point2 =
+      PointPainter::Data(p1(0), p1(1), p1(2), frame_color(0), frame_color(1),
+                         frame_color(2), frame_color(3));
+
+  // line5->point1 =
+  //     PointPainter::Data(p0(0), p0(1), p0(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+  // line5->point2 =
+  //     PointPainter::Data(p1(0), p1(1), p1(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+
+  // line6->point1 =
+  //     PointPainter::Data(p0(0), p0(1), p0(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+  // line6->point2 =
+  //     PointPainter::Data(p2(0), p2(1), p2(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+
+  // line7->point1 =
+  //     PointPainter::Data(p0(0), p0(1), p0(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+  // line7->point2 =
+  //     PointPainter::Data(p3(0), p3(1), p3(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+
+  // line8->point1 =
+  //     PointPainter::Data(p0(0), p0(1), p0(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+  // line8->point2 =
+  //     PointPainter::Data(p4(0), p4(1), p4(2), frame_color(0), frame_color(1),
+  //                        frame_color(2), frame_color(3));
+}
+
 }  // namespace
 
 ModelViewerWidget::ModelViewerWidget(QWidget* parent, OptionManager* options)
@@ -272,6 +412,10 @@ void ModelViewerWidget::paintGL() {
   movie_grabber_path_painter_.Render(pmv_matrix, width(), height(), 1.5);
   movie_grabber_line_painter_.Render(pmv_matrix, width(), height(), 1);
   movie_grabber_triangle_painter_.Render(pmv_matrix);
+
+  // Planes
+  plane_line_painter_.Render(pmv_matrix, width(), height(), 1);
+  plane_triangle_painter_.Render(pmv_matrix);
 }
 
 void ModelViewerWidget::resizeGL(int width, int height) {
@@ -447,6 +591,7 @@ void ModelViewerWidget::ChangeCameraSize(const float delta) {
   image_size_ *= (1.0f + delta / 100.0f * kImageScaleSpeed);
   image_size_ = std::max(kMinImageSize, std::min(kMaxImageSize, image_size_));
   UploadImageData();
+  UploadPlaneData();
   UploadMovieGrabberData();
   update();
 }
@@ -476,6 +621,7 @@ void ModelViewerWidget::SelectObject(const int x, const int y) {
 
   // Upload data in selection mode (one color per object).
   UploadImageData(true);
+  UploadPlaneData();
   UploadPointData(true);
 
   // Render in selection mode, with larger points to improve selection accuracy.
@@ -529,6 +675,7 @@ void ModelViewerWidget::SelectObject(const int x, const int y) {
   selection_buffer_.clear();
 
   UploadPointData();
+  UploadPlaneData();
   UploadImageData();
   UploadPointConnectionData();
   UploadImageConnectionData();
@@ -581,6 +728,61 @@ void ModelViewerWidget::ShowPointInfo(const point3D_t point3D_id) {
 
 void ModelViewerWidget::ShowImageInfo(const image_t image_id) {
   image_viewer_widget_->ShowImageWithId(image_id);
+}
+
+void ModelViewerWidget::UploadPlaneData() {
+  makeCurrent();
+
+  // Build plane model
+  std::vector<LinePainter::Data> line_data;
+  line_data.reserve(4 * movie_grabber_widget_->views.size());
+
+  std::vector<TrianglePainter::Data> triangle_data;
+  triangle_data.reserve(2 * movie_grabber_widget_->views.size());
+
+  for (auto plane : plane_list) {
+    Eigen::Vector4f plane_color;
+    Eigen::Vector4f frame_color;
+    plane_color = kSelectedImagePlaneColor;
+    frame_color = kSelectedImageFrameColor;
+
+    LinePainter::Data line1, line2, line3, line4, line5, line6, line7, line8;
+    TrianglePainter::Data triangle1, triangle2;
+    BuildPlaneModel(plane.second[0], plane.second[1], plane.second[2],
+                    plane.second[3], plane_color, frame_color, &triangle1,
+                    &triangle2, &line1, &line2, &line3, &line4, &line5, &line6,
+                    &line7, &line8);
+
+    line_data.push_back(line1);
+    line_data.push_back(line2);
+    line_data.push_back(line3);
+    line_data.push_back(line4);
+    line_data.push_back(line5);
+    line_data.push_back(line6);
+    line_data.push_back(line7);
+    line_data.push_back(line8);
+
+    triangle_data.push_back(triangle1);
+    triangle_data.push_back(triangle2);
+  }
+
+  plane_line_painter_.Upload(line_data);
+  plane_triangle_painter_.Upload(triangle_data);
+}
+
+void ModelViewerWidget::ShowPlane(int i, float a, float b, float c, float d) {
+  if (plane_list.find(i) == plane_list.end()) {
+    std::cout << "Showing plane " << a << " " << b << " " << c << " " << d
+              << std::endl;
+    plane_list[i] = std::vector<float>({a, b, c, d});
+  } else {
+    std::cout << "Hiding plane " << a << " " << b << " " << c << " " << d
+              << std::endl;
+    plane_list.erase(i);
+  }
+
+  UploadPlaneData();
+  update();
 }
 
 float ModelViewerWidget::PointSize() const { return point_size_; }
@@ -669,6 +871,9 @@ void ModelViewerWidget::SetupPainters() {
   movie_grabber_path_painter_.Setup();
   movie_grabber_line_painter_.Setup();
   movie_grabber_triangle_painter_.Setup();
+
+  plane_line_painter_.Setup();
+  plane_triangle_painter_.Setup();
 }
 
 void ModelViewerWidget::SetupView() {
@@ -689,6 +894,7 @@ void ModelViewerWidget::Upload() {
 
   UploadPointData();
   UploadImageData();
+  UploadPlaneData();
   UploadMovieGrabberData();
   UploadPointConnectionData();
   UploadImageConnectionData();

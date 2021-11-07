@@ -587,12 +587,10 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     plane_table_widget_->setItem(i, 3, d_item);
 
     QPushButton* plane_button = new QPushButton("显示平面");
-    // connect(plane_button, &QPushButton::released,
-    //         [this, image_name, image_path]() {
-    //           image_viewer_widget_->setWindowTitle(
-    //               QString("Image for %1").arg(image_name.c_str()));
-    //           image_viewer_widget_->ReadAndShow(image_path);
-    //         });
+    connect(plane_button, &QPushButton::released, [this, i, a, b, c, d]() {
+      main_window_->model_viewer_widget_->ShowPlane(i, a, b, c, d);
+    });
+
     plane_table_widget_->setCellWidget(i, 4, plane_button);
 
     // table_widget_->setCellWidget(

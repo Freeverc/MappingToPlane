@@ -113,6 +113,7 @@ class ModelViewerWidget : public QOpenGLWidget,
 
   void ShowPointInfo(const point3D_t point3D_id);
   void ShowImageInfo(const image_t image_id);
+  void ShowPlane(int i, float a, float b, float c, float d);
 
   float PointSize() const;
   float ImageSize() const;
@@ -126,6 +127,7 @@ class ModelViewerWidget : public QOpenGLWidget,
   EIGEN_STL_UMAP(camera_t, Camera) cameras;
   EIGEN_STL_UMAP(image_t, Image) images;
   EIGEN_STL_UMAP(point3D_t, Point3D) points3D;
+  EIGEN_STL_UMAP(int, std::vector<float>) plane_list;
   std::vector<image_t> reg_image_ids;
 
   QLabel* statusbar_status_label;
@@ -149,6 +151,7 @@ class ModelViewerWidget : public QOpenGLWidget,
   void UploadPointData(const bool selection_mode = false);
   void UploadPointConnectionData();
   void UploadImageData(const bool selection_mode = false);
+  void UploadPlaneData();
   void UploadImageConnectionData();
   void UploadMovieGrabberData();
 
@@ -178,6 +181,9 @@ class ModelViewerWidget : public QOpenGLWidget,
   LinePainter movie_grabber_path_painter_;
   LinePainter movie_grabber_line_painter_;
   TrianglePainter movie_grabber_triangle_painter_;
+
+  LinePainter plane_line_painter_;
+  TrianglePainter plane_triangle_painter_;
 
   PointViewerWidget* point_viewer_widget_;
   DatabaseImageViewerWidget* image_viewer_widget_;
