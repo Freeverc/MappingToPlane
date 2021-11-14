@@ -9,7 +9,7 @@ void down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
 
   pcl::VoxelGrid<pcl::PointXYZ> vg;
   vg.setInputCloud(point_cloud);
-  vg.setLeafSize(0.05f, 0.05f, 0.05f);
+  vg.setLeafSize(0.03f, 0.03f, 0.03f);
   vg.filter(*sampled_point_cloud);
   std::cout << "PointCloud after sampling has: " << sampled_point_cloud->size()
             << " data points." << std::endl;  //*
@@ -344,6 +344,121 @@ bool GenerateDEM(const std::string& input_path,
   }
   std::cout << "Size : " << point_cloud->width << " " << point_cloud->height
             << std::endl;
+
+  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+
+  // Create the segmentation object
+  pcl::SACSegmentation<pcl::PointXYZ> seg;
+
+  // Optional
+  seg.setOptimizeCoefficients(true);
+  // Mandatory
+  seg.setModelType(pcl::SACMODEL_PLANE);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setDistanceThreshold(0.2);
+
+  seg.setInputCloud(point_cloud);
+  seg.segment(*inliers, *coefficients);
+
+  float a = coefficients->values[0];
+  float b = coefficients->values[1];
+  float c = coefficients->values[2];
+  float d = coefficients->values[3];
+  std::cout << "ground : " << a << " " << b << " " << c << " " << d
+            << std::endl;
+
+  float h = std::sqrt(a * a + b * b);
+  float s = std::sqrt(a * a + b * b + c * c);
+  float sin_ab = b / h;
+  float cos_ab = a / h;
+  float sin_z = c / s;
+  float cos_z = h / s;
+
+  Eigen::Matrix<float, 3, 3, Eigen::RowMajor> R;
+  R(0, 0) = sin_ab;
+  R(0, 1) = sin_z * cos_ab;
+  R(0, 2) = a / s;
+  R(1, 0) = -cos_ab;
+  R(1, 1) = sin_z * sin_ab;
+  R(1, 2) = b / s;
+  R(2, 0) = 0;
+  R(2, 1) = -cos_z;
+  R(2, 2) = c / s;
+  Eigen::Matrix<float, 3, 3, Eigen::RowMajor> R_inv = R.inverse();
+
+  float min_d = FLT_MAX;
+  float max_d = FLT_MIN;
+  float min_xx = FLT_MAX;
+  float max_xx = FLT_MIN;
+  float min_yy = FLT_MAX;
+  float max_yy = FLT_MIN;
+  float min_zz = FLT_MAX;
+  float max_zz = FLT_MIN;
+  for (int i = 0; i < point_cloud->points.size(); ++i) {
+    double x = (*point_cloud)[i].x;
+    double y = (*point_cloud)[i].y;
+    double z = (*point_cloud)[i].z;
+    Eigen::Vector3f xyz(x, y, z);
+    Eigen::Vector3f xyz_p = R_inv * xyz;
+    float dis = (a * x + b * y + c * z + d) / s;
+    min_d = std::min(dis, min_d);
+    max_d = std::max(dis, max_d);
+    min_xx = std::min(xyz_p(0), min_xx);
+    max_xx = std::max(xyz_p(0), max_xx);
+    min_yy = std::min(xyz_p(1), min_yy);
+    max_yy = std::max(xyz_p(1), max_yy);
+    min_zz = std::min(xyz_p(2), min_zz);
+    max_zz = std::max(xyz_p(2), max_zz);
+  }
+
+  double reso = 0.02;
+  Bitmap bitmap;
+  int width = static_cast<int>((max_xx - min_xx) / reso + 1);
+  int height = static_cast<int>((max_yy - min_yy) / reso + 1);
+  int houdu = static_cast<int>((max_zz - min_zz) / reso + 1);
+  bitmap.Allocate(width, height, true);
+  std::vector<std::vector<float>> d_list(height,
+                                         std::vector<float>(width, min_d));
+
+  std::cout << "x: " << min_xx << " " << max_xx << std::endl;
+  std::cout << "y: " << min_yy << " " << max_yy << std::endl;
+  std::cout << "z: " << min_zz << " " << max_zz << std::endl;
+  std::cout << "d: " << min_d << " " << max_d << std::endl;
+  std::cout << "w : " << width << " h :  " << height << " z : " << houdu
+            << std::endl;
+
+  for (int i = 0; i < point_cloud->points.size(); ++i) {
+    double x = (*point_cloud)[i].x;
+    double y = (*point_cloud)[i].y;
+    double z = (*point_cloud)[i].z;
+    float dis = a * x + b * y + c * z + d / s;
+
+    Eigen::Vector3f xyz(x, y, z);
+    Eigen::Vector3f xyz_p = R_inv * xyz;
+
+    int x_id = static_cast<int>((xyz_p(0) - min_xx) / reso);
+    int y_id = static_cast<int>((xyz_p(1) - min_yy) / reso);
+
+    if (i < 10) {
+      std::cout << "p1: " << xyz(0) << " " << xyz(1) << " " << xyz(2) << " "
+                << dis << " - " << dis - xyz_p(2) << std::endl;
+      std::cout << "p2: " << xyz_p(0) << " " << xyz_p(1) << " " << xyz_p(2)
+                << std::endl;
+      std::cout << "id : " << x_id << " " << y_id << std::endl;
+    }
+
+    if (dis > d_list[y_id][x_id]) {
+      const float gray = (dis - min_d) / (max_d - min_d);
+      const BitmapColor<float> color(255 * JetColormap::Red(gray),
+                                     255 * JetColormap::Green(gray),
+                                     255 * JetColormap::Blue(gray));
+      bitmap.SetPixel(x_id, y_id, color.Cast<uint8_t>());
+      d_list[y_id][x_id] = dis;
+    }
+  }
+
+  bitmap.Write(dem_path);
 }
 
 }  // namespace mvs

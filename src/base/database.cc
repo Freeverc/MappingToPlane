@@ -650,23 +650,6 @@ image_t Database::WriteImage(const Image& image,
   return static_cast<image_t>(sqlite3_last_insert_rowid(database_));
 }
 
-uint32_t Database::WriteGeographyPos(const std::string& pos_name,
-                                     const std::vector<double>& gps_pos) const {
-  SQLITE3_CALL(sqlite3_bind_null(sql_stmt_add_geography_pos_, 1));
-  SQLITE3_CALL(
-      sqlite3_bind_text(sql_stmt_add_geography_pos_, 2, pos_name.c_str(),
-                        static_cast<int>(pos_name.size()), SQLITE_STATIC));
-  // NaNs are automatically converted to NULLs in SQLite.
-  SQLITE3_CALL(sqlite3_bind_double(sql_stmt_add_geography_pos_, 3, gps_pos[0]));
-  SQLITE3_CALL(sqlite3_bind_double(sql_stmt_add_geography_pos_, 4, gps_pos[1]));
-  SQLITE3_CALL(sqlite3_bind_double(sql_stmt_add_geography_pos_, 5, gps_pos[2]));
-
-  SQLITE3_CALL(sqlite3_step(sql_stmt_add_geography_pos_));
-  SQLITE3_CALL(sqlite3_reset(sql_stmt_add_geography_pos_));
-
-  return static_cast<uint32_t>(sqlite3_last_insert_rowid(database_));
-}
-
 void Database::WriteKeypoints(const image_t image_id,
                               const FeatureKeypoints& keypoints) const {
   const FeatureKeypointsBlob blob = FeatureKeypointsToBlob(keypoints);
@@ -1019,13 +1002,6 @@ void Database::PrepareSQLStatements() {
   SQLITE3_CALL(
       sqlite3_prepare_v2(database_, sql.c_str(), -1, &sql_stmt_add_image_, 0));
   sql_stmts_.push_back(sql_stmt_add_image_);
-
-  sql =
-      "INSERT INTO geography_pos(pos_id, pos_name, latitude, longitude, "
-      "altitude) VALUES(?, ?, ?, ?, ?);";
-  SQLITE3_CALL(sqlite3_prepare_v2(database_, sql.c_str(), -1,
-                                  &sql_stmt_add_geography_pos_, 0));
-  sql_stmts_.push_back(sql_stmt_add_geography_pos_);
 
   //////////////////////////////////////////////////////////////////////////////
   // update_*

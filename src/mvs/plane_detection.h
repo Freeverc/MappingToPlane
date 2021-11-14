@@ -1,11 +1,14 @@
 #ifndef COLMAP_SRC_MVS_PLANE_DETECTION_H_
 #define COLMAP_SRC_MVS_PLANE_DETECTION_H_
 
-#include "util/ply.h"
+#include <Eigen/Core>
 #include <cstdlib>
 #include <ctime>
 #include <float.h>
 #include <iostream>
+
+#include "util/bitmap.h"
+#include "util/ply.h"
 
 #include <pcl/common/transforms.h>
 #include <pcl/features/normal_3d.h>

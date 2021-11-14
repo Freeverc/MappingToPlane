@@ -207,8 +207,8 @@ void BuildPlaneModel(const float a, const float b, const float c, const float d,
   float x = -d * a / s2;
   float y = -d * b / s2;
   float z = -d * c / s2;
-  float m = 6;
-  float n = 8;
+  float m = 10;
+  float n = 12;
   float dx1, dy1, dz1, dx2, dy2, dz2;
   float h = std::sqrt(a * a + b * b);
   float s = std::sqrt(s2);

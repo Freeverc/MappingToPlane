@@ -13,20 +13,20 @@ GeoConvertor::GeoConvertor(GPSPoint& ref_gps_in) {
 void GeoConvertor::SetRefGps(GPSPoint& ref_gps_in) {
   ref_gps = ref_gps_in;
 
-  double ref_lat_rad = AngelToRadian(ref_gps.latitude);
-  double ref_lon_rad = AngelToRadian(ref_gps.longitude);
-  double ref_sin_lat = std::sin(ref_lat_rad);
-  double ref_cos_lat = std::cos(ref_lat_rad);
-  double ref_sin_lon = std::sin(ref_lon_rad);
-  double ref_cos_lon = std::cos(ref_lon_rad);
+  ref_lat_rad = AngelToRadian(ref_gps.latitude);
+  ref_lon_rad = AngelToRadian(ref_gps.longitude);
+  ref_sin_lat = std::sin(ref_lat_rad);
+  ref_cos_lat = std::cos(ref_lat_rad);
+  ref_sin_lon = std::sin(ref_lon_rad);
+  ref_cos_lon = std::cos(ref_lon_rad);
 
-  double e2 = EARTH_F_r * (2 - EARTH_F_r);
-  double r_m =
+  e2 = EARTH_F_r * (2 - EARTH_F_r);
+  r_m =
       EARTH_A * (1 - e2) / std::pow((1 - e2 * ref_sin_lat * ref_sin_lat), 1.5) +
       ref_gps.altitude;
-  double r_n = EARTH_A / std::sqrt(1 - e2 * ref_sin_lat * ref_sin_lat) +
-               ref_gps.altitude;
-  double r_n_lat = r_n * ref_cos_lat;
+  r_n = EARTH_A / std::sqrt(1 - e2 * ref_sin_lat * ref_sin_lat) +
+        ref_gps.altitude;
+  r_n_lat = r_n * ref_cos_lat;
 }
 
 // Refer : https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection

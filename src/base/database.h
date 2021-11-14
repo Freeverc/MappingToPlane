@@ -286,7 +286,6 @@ class Database {
   // add_*
   sqlite3_stmt* sql_stmt_add_camera_ = nullptr;
   sqlite3_stmt* sql_stmt_add_image_ = nullptr;
-  sqlite3_stmt* sql_stmt_add_geography_pos_ = nullptr;
 
   // update_*
   sqlite3_stmt* sql_stmt_update_camera_ = nullptr;

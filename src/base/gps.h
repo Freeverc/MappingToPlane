@@ -1,3 +1,4 @@
+#pragma once
 
 #ifndef COLMAP_SRC_BASE_GPS_H_
 #define COLMAP_SRC_BASE_GPS_H_
@@ -89,12 +90,6 @@ struct GeoConvertor {
   double r_n;
   double r_n_lat;
 };
-
-double Distance(Point& p1, Point& p2) {
-  return std::sqrt((p1.x - p2.x) * (p1.x - p2.x) +
-                   (p1.y - p2.y) * (p1.y - p2.y) +
-                   (p1.z - p2.z) * (p1.z - p2.z));
-}
 
 }  // namespace colmap
 
