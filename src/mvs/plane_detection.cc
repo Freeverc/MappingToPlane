@@ -270,9 +270,6 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
                     std::vector<PlyPoint>& plane_points,
                     std::vector<Plane>& plane_list) {
   std::cout << "Point cloud measuring : " << std::endl;
-  std::cout << "./point_cluster measuring or merge : "
-               "(measure, merge)"
-            << std::endl;
 
   std::string point_cloud_path = input_path + "/fused.ply";
   std::string sampled_path = output_path + "/sampled.ply";
@@ -329,5 +326,25 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
     plane_points.push_back(p);
   }
 }
+
+bool GenerateDEM(const std::string& input_path,
+                 const std::string& output_path) {
+  std::cout << "Generating DEM : " << std::endl;
+
+  std::string point_cloud_path = input_path + "/filtered.ply";
+  std::string dem_path = output_path + "/dem.jpg";
+
+  // Read point cloud.
+  pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  if (pcl::io::loadPLYFile<pcl::PointXYZ>(point_cloud_path, *point_cloud) ==
+      -1) {
+    PCL_ERROR("Couldn't read file\n");
+    return (-1);
+  }
+  std::cout << "Size : " << point_cloud->width << " " << point_cloud->height
+            << std::endl;
+}
+
 }  // namespace mvs
 }  // namespace colmap

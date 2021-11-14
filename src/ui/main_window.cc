@@ -998,7 +998,7 @@ void MainWindow::ReconstructionReset() {
   UpdateTimer();
 
   EnableBlockingActions();
-  action_reconstruction_start_->setText(tr("Start reconstruction"));
+  action_reconstruction_start_->setText(tr("稀疏重建"));
   action_reconstruction_pause_->setEnabled(false);
 
   RenderClear();

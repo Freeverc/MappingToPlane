@@ -174,6 +174,9 @@ class Database {
   // is false a new identifier is automatically generated.
   image_t WriteImage(const Image& image, const bool use_image_id = false) const;
 
+  uint32_t WriteGeographyPos(const std::string& pos_name,
+                             const std::vector<double>& gps_pos) const;
+
   // Write a new entry in the database. The user is responsible for making sure
   // that the entry does not yet exist. For image pairs, the order of
   // `image_id1` and `image_id2` does not matter.
@@ -283,6 +286,7 @@ class Database {
   // add_*
   sqlite3_stmt* sql_stmt_add_camera_ = nullptr;
   sqlite3_stmt* sql_stmt_add_image_ = nullptr;
+  sqlite3_stmt* sql_stmt_add_geography_pos_ = nullptr;
 
   // update_*
   sqlite3_stmt* sql_stmt_update_camera_ = nullptr;

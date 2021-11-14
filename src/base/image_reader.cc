@@ -32,6 +32,7 @@
 #include "base/image_reader.h"
 
 #include "base/camera_models.h"
+#include "base/gps.h"
 #include "util/misc.h"
 
 namespace colmap {
@@ -222,10 +223,15 @@ ImageReader::Status ImageReader::Next(Camera* camera, Image* image,
     // Extract GPS data.
     //////////////////////////////////////////////////////////////////////////////
 
-    if (!bitmap->ExifLatitude(&image->TvecPrior(0)) ||
-        !bitmap->ExifLongitude(&image->TvecPrior(1)) ||
-        !bitmap->ExifAltitude(&image->TvecPrior(2))) {
+    GPSPoint gps;
+    if (!bitmap->ExifLatitude(&gps.latitude) ||
+        !bitmap->ExifLongitude(&gps.longitude) ||
+        !bitmap->ExifAltitude(&gps.altitude)) {
       image->TvecPrior().setConstant(std::numeric_limits<double>::quiet_NaN());
+    } else {
+      Point p;
+      GeoConvertor::GpsToECEF(gps, p);
+      image->SetTvecPrior(Eigen::Vector3d(p.x, p.y, p.z));
     }
   }
 

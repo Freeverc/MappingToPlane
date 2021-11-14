@@ -1,126 +1,97 @@
-// Copyright (c) 2018, ETH Zurich and UNC Chapel Hill.
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//
-//     * Neither the name of ETH Zurich and UNC Chapel Hill nor the names of
-//       its contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-//
-// Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
-
 #include "base/gps.h"
 
 #include "util/math.h"
 
 namespace colmap {
 
-GPSTransform::GPSTransform(const int ellipsoid) {
-  switch (ellipsoid) {
-    case GRS80:
-      a_ = 6378137;
-      b_ = 6.356752314140356e+06;
-      f_ = 0.003352810681182;
-      break;
-    case WGS84:
-      a_ = 6378137;
-      b_ = 6.356752314245179e+06;
-      f_ = 0.003352810664747;
-      break;
-    default:
-      a_ = std::numeric_limits<double>::quiet_NaN();
-      b_ = std::numeric_limits<double>::quiet_NaN();
-      f_ = std::numeric_limits<double>::quiet_NaN();
-      throw std::invalid_argument("Ellipsoid not defined");
-  }
+GeoConvertor::GeoConvertor(GPSPoint& ref_gps_in) {
+  SetRefGps(ref_gps_in);
 
-  e2_ = (a_ * a_ - b_ * b_) / (a_ * a_);
+  GpsToECEF(ref_gps, ref_ecef);
 }
 
-std::vector<Eigen::Vector3d> GPSTransform::EllToXYZ(
-    const std::vector<Eigen::Vector3d>& ell) const {
-  std::vector<Eigen::Vector3d> xyz(ell.size());
+void GeoConvertor::SetRefGps(GPSPoint& ref_gps_in) {
+  ref_gps = ref_gps_in;
 
-  for (size_t i = 0; i < ell.size(); ++i) {
-    const double lat = DegToRad(ell[i](0));
-    const double lon = DegToRad(ell[i](1));
-    const double alt = ell[i](2);
+  double ref_lat_rad = AngelToRadian(ref_gps.latitude);
+  double ref_lon_rad = AngelToRadian(ref_gps.longitude);
+  double ref_sin_lat = std::sin(ref_lat_rad);
+  double ref_cos_lat = std::cos(ref_lat_rad);
+  double ref_sin_lon = std::sin(ref_lon_rad);
+  double ref_cos_lon = std::cos(ref_lon_rad);
 
-    const double sin_lat = sin(lat);
-    const double sin_lon = sin(lon);
-    const double cos_lat = cos(lat);
-    const double cos_lon = cos(lon);
-
-    // Normalized radius
-    const double N = a_ / sqrt(1 - e2_ * sin_lat * sin_lat);
-
-    xyz[i](0) = (N + alt) * cos_lat * cos_lon;
-    xyz[i](1) = (N + alt) * cos_lat * sin_lon;
-    xyz[i](2) = (N * (1 - e2_) + alt) * sin_lat;
-  }
-
-  return xyz;
+  double e2 = EARTH_F_r * (2 - EARTH_F_r);
+  double r_m =
+      EARTH_A * (1 - e2) / std::pow((1 - e2 * ref_sin_lat * ref_sin_lat), 1.5) +
+      ref_gps.altitude;
+  double r_n = EARTH_A / std::sqrt(1 - e2 * ref_sin_lat * ref_sin_lat) +
+               ref_gps.altitude;
+  double r_n_lat = r_n * ref_cos_lat;
 }
 
-std::vector<Eigen::Vector3d> GPSTransform::XYZToEll(
-    const std::vector<Eigen::Vector3d>& xyz) const {
-  std::vector<Eigen::Vector3d> ell(xyz.size());
+// Refer : https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection
+void GeoConvertor::AEP(GPSPoint ref_gps, GPSPoint gps, Point& p) {
+  double lat_rad = AngelToRadian(gps.latitude);
+  double lon_rad = AngelToRadian(gps.longitude);
+  double sin_lat = std::sin(lat_rad);
+  double cos_lat = std::cos(lat_rad);
+  double cos_d_lon = std::cos(lon_rad - ref_lon_rad);
 
-  for (size_t i = 0; i < ell.size(); ++i) {
-    const double x = xyz[i](0);
-    const double y = xyz[i](1);
-    const double z = xyz[i](2);
+  double arg = ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon;
+  arg = std::min(arg, 1.0);
+  arg = std::max(arg, -1.0);
+  double c = std::acos(arg);
+  double k = (fabs(c) < DBL_EPSILON) ? 1.0 : (c / std::sin(c));
+  p.y = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * r_m;
+  p.x = k * cos_lat * std::sin(lon_rad - ref_lon_rad) * r_n;
+  p.z = gps.altitude - ref_gps.altitude;
+}
 
-    const double xx = x * x;
-    const double yy = y * y;
+void GeoConvertor::QuickGPSToENU(GPSPoint ref_gps, GPSPoint gps, Point& p) {
+  double lat_rad = AngelToRadian(gps.latitude);
+  double lon_rad = AngelToRadian(gps.longitude);
+  p.x = (lon_rad - ref_lon_rad) * r_n_lat;
+  p.y = (lat_rad - ref_lat_rad) * r_m;
+  p.z = gps.altitude - ref_gps.altitude;
+}
 
-    const double kEps = 1e-12;
+void GeoConvertor::QuickENUToGPS(GPSPoint ref_gps, Point p, GPSPoint& gps) {
+  gps.longitude = RadianToAngel(ref_lon_rad + p.x / r_n_lat);
+  gps.latitude = RadianToAngel(ref_lat_rad + p.y / r_m);
+  gps.altitude = p.z + ref_gps.altitude;
+}
 
-    // Latitude
-    double lat = atan2(z, sqrt(xx + yy));
-    double alt;
+void GeoConvertor::GpsToECEF(GPSPoint gps, Point& ecef) {
+  double lat_rad = AngelToRadian(gps.latitude);
+  double lon_rad = AngelToRadian(gps.longitude);
 
-    for (size_t j = 0; j < 100; ++j) {
-      const double sin_lat0 = sin(lat);
-      const double N = a_ / sqrt(1 - e2_ * sin_lat0 * sin_lat0);
-      alt = sqrt(xx + yy) / cos(lat) - N;
-      const double prev_lat = lat;
-      lat = atan((z / sqrt(xx + yy)) * 1 / (1 - e2_ * N / (N + alt)));
+  double cos_lat = std::cos(lat_rad);
+  double cos_lon = std::cos(lon_rad);
+  double sin_lat = std::sin(lat_rad);
+  double sin_lon = std::sin(lon_rad);
 
-      if (std::abs(prev_lat - lat) < kEps) {
-        break;
-      }
-    }
+  double e2_cur = EARTH_F_r * (2 - EARTH_F_r);
+  double N = EARTH_A / (std::sqrt(1.0 - (e2_cur * sin_lat * sin_lat)));
 
-    ell[i](0) = RadToDeg(lat);
+  ecef.x = (N + gps.altitude) * cos_lat * cos_lon;
+  ecef.y = (N + gps.altitude) * cos_lat * sin_lon;
+  ecef.z = ((1 - e2_cur) * N + gps.altitude) * sin_lat;
+}
 
-    // Longitude
-    ell[i](1) = RadToDeg(atan2(y, x));
-    // Alt
-    ell[i](2) = alt;
-  }
+// Refer : https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
+void GeoConvertor::GPSToENU(GPSPoint ref_gps, GPSPoint cur_gps, Point& enu) {
+  Point cur_ecef;
+  GpsToECEF(cur_gps, cur_ecef);
 
-  return ell;
+  double delta_x = cur_ecef.x - ref_ecef.x;
+  double delta_y = cur_ecef.y - ref_ecef.y;
+  double delta_z = cur_ecef.z - ref_ecef.z;
+
+  enu.x = delta_x * (-ref_sin_lon) + delta_y * (ref_cos_lon);
+  enu.y = delta_x * (-ref_sin_lat) * (ref_cos_lon) +
+          delta_y * (-ref_sin_lat) * (ref_sin_lon) + delta_z * ref_cos_lat;
+  enu.z = delta_x * (ref_cos_lat) * (ref_cos_lon) +
+          delta_y * (ref_cos_lat) * (ref_sin_lon) + delta_z * ref_sin_lat;
 }
 
 }  // namespace colmap

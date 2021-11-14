@@ -42,6 +42,7 @@ namespace colmap {
 namespace {
 
 const static std::string kFusedFileName = "fused.ply";
+const static std::string kDEMFileName = "dem.jpg";
 const static std::string kPlanePointsFileName = "plane_points.ply";
 const static std::string kPlaneClusterFileName = "cluster_points.ply";
 const static std::string kPoissonMeshedFileName = "meshed-poisson.ply";
@@ -235,43 +236,50 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
           &DenseReconstructionWidget::PlaneDetection);
   grid->addWidget(plane_detection_button_, 0, 3, Qt::AlignLeft);
 
+  dem_button_ = new QPushButton(tr("高程图"), this);
+  connect(dem_button_, &QPushButton::released, this,
+          &DenseReconstructionWidget::DEM);
+  grid->addWidget(dem_button_, 0, 4, Qt::AlignLeft);
+
   delaunay_meshing_button_ = new QPushButton(tr("德劳内重建"), this);
   connect(delaunay_meshing_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::DelaunayMeshing);
-  grid->addWidget(delaunay_meshing_button_, 0, 4, Qt::AlignLeft);
+  grid->addWidget(delaunay_meshing_button_, 0, 5, Qt::AlignLeft);
 
   poisson_meshing_button_ = new QPushButton(tr("泊松重建"), this);
   connect(poisson_meshing_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::PoissonMeshing);
-  grid->addWidget(poisson_meshing_button_, 0, 5, Qt::AlignLeft);
+  grid->addWidget(poisson_meshing_button_, 0, 6, Qt::AlignLeft);
 
   QPushButton* options_button = new QPushButton(tr("选项"), this);
   connect(options_button, &QPushButton::released, options_widget_,
           &OptionsWidget::show);
-  grid->addWidget(options_button, 0, 6, Qt::AlignLeft);
+  grid->addWidget(options_button, 0, 7, Qt::AlignLeft);
 
   QLabel* workspace_path_label = new QLabel("工作路径", this);
-  grid->addWidget(workspace_path_label, 0, 7, Qt::AlignRight);
+  grid->addWidget(workspace_path_label, 0, 8, Qt::AlignRight);
 
   workspace_path_text_ = new QLineEdit(this);
-  workspace_path_text_->setFixedSize(100, 25);
-  grid->addWidget(workspace_path_text_, 0, 8, Qt::AlignRight);
+  grid->addWidget(workspace_path_text_, 0, 9, Qt::AlignRight);
   connect(workspace_path_text_, &QLineEdit::textChanged, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
 
   QPushButton* refresh_path_button = new QPushButton(tr("刷新"), this);
   connect(refresh_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
-  grid->addWidget(refresh_path_button, 0, 9, Qt::AlignRight);
+  grid->addWidget(refresh_path_button, 0, 10, Qt::AlignRight);
 
   QPushButton* workspace_path_button = new QPushButton(tr("选择"), this);
   connect(workspace_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::SelectWorkspacePath,
           Qt::QueuedConnection);
-  grid->addWidget(workspace_path_button, 0, 10, Qt::AlignRight);
+  grid->addWidget(workspace_path_button, 0, 11, Qt::AlignRight);
 
   QPushButton* save_button = new QPushButton(tr("保存"), this);
-  grid->addWidget(save_button, 0, 11, Qt::AlignRight);
+  grid->addWidget(save_button, 0, 12, Qt::AlignRight);
+
+  QPushButton* quit_button = new QPushButton(tr("退出"), this);
+  grid->addWidget(quit_button, 0, 13, Qt::AlignRight);
 
   QStringList table_header;
   table_header << "图像名称"
@@ -310,7 +318,7 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
   grid->addWidget(image_table_widget_, 1, 0, 1, 5);
   grid->addWidget(plane_table_widget_, 1, 5, 1, 10);
 
-  grid->setColumnStretch(4, 1);
+  // grid->setColumnStretch(4, 1);
 
   image_viewer_widget_ = new ImageViewerWidget(this);
   image_viewer_widget_->setWindowModality(Qt::ApplicationModal);
@@ -428,6 +436,25 @@ void DenseReconstructionWidget::PlaneDetection() {
   }
 }
 
+void DenseReconstructionWidget::DEM() {
+  const std::string workspace_path = GetWorkspacePath();
+  if (workspace_path.empty()) {
+    return;
+  }
+
+  if (ExistsFile(JoinPaths(workspace_path, kFusedFileName))) {
+    thread_control_widget_->StartFunction(
+        "Generating DEM...", [this, workspace_path]() {
+          mvs::PlaneDetectionOptions plane_detection_options;
+          std::vector<PlyPoint> plane_points;
+
+          mvs::GenerateDEM(workspace_path, workspace_path);
+          write_plane_points_action_->trigger();
+        });
+    image_viewer_widget_->ReadAndShow(JoinPaths(workspace_path, kDEMFileName));
+  }
+}
+
 void DenseReconstructionWidget::PoissonMeshing() {
   const std::string workspace_path = GetWorkspacePath();
   if (workspace_path.empty()) {
@@ -508,6 +535,7 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     stereo_button_->setEnabled(false);
     fusion_button_->setEnabled(false);
     plane_detection_button_->setEnabled(false);
+    dem_button_->setEnabled(false);
     poisson_meshing_button_->setEnabled(false);
     delaunay_meshing_button_->setEnabled(false);
     return;
@@ -529,6 +557,7 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     stereo_button_->setEnabled(false);
     fusion_button_->setEnabled(false);
     plane_detection_button_->setEnabled(false);
+    dem_button_->setEnabled(false);
     poisson_meshing_button_->setEnabled(false);
     delaunay_meshing_button_->setEnabled(false);
     return;
@@ -621,6 +650,8 @@ void DenseReconstructionWidget::RefreshWorkspace() {
 
   plane_detection_button_->setEnabled(
       ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
+  dem_button_->setEnabled(
+      ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
   poisson_meshing_button_->setEnabled(
       ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
   delaunay_meshing_button_->setEnabled(
@@ -670,6 +701,7 @@ void DenseReconstructionWidget::WriteFusedPoints() {
     fused_points_ = {};
     fused_points_visibility_ = {};
     plane_detection_button_->setEnabled(true);
+    dem_button_->setEnabled(true);
     poisson_meshing_button_->setEnabled(true);
     delaunay_meshing_button_->setEnabled(true);
   });
@@ -714,17 +746,6 @@ void DenseReconstructionWidget::WritePlanePoints() {
   }
 
   RefreshWorkspace();
-
-  // thread_control_widget_->StartFunction("Exporting...", [this,
-  //                                                        workspace_path]() {
-  //   const std::string output_path = JoinPaths(workspace_path,
-  //   kFusedFileName); WriteBinaryPlyPoints(output_path, fused_points_);
-  //   mvs::WritePointsVisibility(output_path + ".vis",
-  //   fused_points_visibility_); fused_points_ = {}; fused_points_visibility_ =
-  //   {}; plane_detection_button_->setEnabled(true);
-  //   poisson_meshing_button_->setEnabled(true);
-  //   delaunay_meshing_button_->setEnabled(true);
-  // });
 }
 
 void DenseReconstructionWidget::ShowMeshingInfo() {

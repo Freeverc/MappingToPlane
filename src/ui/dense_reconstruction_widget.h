@@ -67,6 +67,7 @@ class DenseReconstructionWidget : public QWidget {
   void Stereo();
   void Fusion();
   void PlaneDetection();
+  void DEM();
   void PoissonMeshing();
   void DelaunayMeshing();
 
@@ -94,6 +95,7 @@ class DenseReconstructionWidget : public QWidget {
   QPushButton* stereo_button_;
   QPushButton* fusion_button_;
   QPushButton* plane_detection_button_;
+  QPushButton* dem_button_;
   QPushButton* poisson_meshing_button_;
   QPushButton* delaunay_meshing_button_;
   QAction* refresh_workspace_action_;

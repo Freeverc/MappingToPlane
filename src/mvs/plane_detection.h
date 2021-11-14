@@ -79,6 +79,10 @@ bool PlaneDetection(const PlaneDetectionOptions& options,
                     const std::string& output_path,
                     std::vector<PlyPoint>& plane_points,
                     std::vector<Plane>& plane_list);
+
+// Generate DEM
+bool GenerateDEM(const std::string& input_path, const std::string& output_path);
+
 }  // namespace mvs
 }  // namespace colmap
 

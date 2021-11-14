@@ -61,10 +61,10 @@ struct ImageReaderOptions {
   std::vector<std::string> image_list;
 
   // Name of the camera model.
-  std::string camera_model = "SIMPLE_RADIAL";
+  std::string camera_model = "OPENCV";
 
   // Whether to use the same camera for all images.
-  bool single_camera = false;
+  bool single_camera = true;
 
   // Whether to use the same camera for all images in the same sub-folder.
   bool single_camera_per_folder = false;
@@ -81,7 +81,7 @@ struct ImageReaderOptions {
   // have focal length EXIF information, the focal length is set to the
   // value `default_focal_length_factor * max(width, height)`.
   double default_focal_length_factor = 1.2;
-  
+
   // Optional path to an image file specifying a mask for all images. No
   // features will be extracted in regions where the mask is black (pixel
   // intensity value 0 in grayscale).

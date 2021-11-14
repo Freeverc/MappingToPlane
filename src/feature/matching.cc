@@ -1151,8 +1151,6 @@ void SpatialFeatureMatcher::Run() {
 
   std::cout << "Indexing images..." << std::flush;
 
-  GPSTransform gps_transform;
-
   size_t num_locations = 0;
   Eigen::Matrix<float, Eigen::Dynamic, 3, Eigen::RowMajor> location_matrix(
       image_ids.size(), 3);
@@ -1180,11 +1178,9 @@ void SpatialFeatureMatcher::Run() {
       ells[0](1) = image.TvecPrior(1);
       ells[0](2) = options_.ignore_z ? 0 : image.TvecPrior(2);
 
-      const auto xyzs = gps_transform.EllToXYZ(ells);
-
-      location_matrix(num_locations, 0) = static_cast<float>(xyzs[0](0));
-      location_matrix(num_locations, 1) = static_cast<float>(xyzs[0](1));
-      location_matrix(num_locations, 2) = static_cast<float>(xyzs[0](2));
+      location_matrix(num_locations, 0) = static_cast<float>(ells[0](0));
+      location_matrix(num_locations, 1) = static_cast<float>(ells[0](1));
+      location_matrix(num_locations, 2) = static_cast<float>(ells[0](2));
     } else {
       location_matrix(num_locations, 0) =
           static_cast<float>(image.TvecPrior(0));
