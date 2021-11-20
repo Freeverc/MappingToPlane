@@ -9,7 +9,7 @@ void down_sample(pcl::PointCloud<pcl::PointXYZ>::Ptr& point_cloud,
 
   pcl::VoxelGrid<pcl::PointXYZ> vg;
   vg.setInputCloud(point_cloud);
-  vg.setLeafSize(0.03f, 0.03f, 0.03f);
+  vg.setLeafSize(0.02f, 0.02f, 0.02f);
   vg.filter(*sampled_point_cloud);
   std::cout << "PointCloud after sampling has: " << sampled_point_cloud->size()
             << " data points." << std::endl;  //*
@@ -220,12 +220,11 @@ void multi_plane_detection(
 
     float s2 = a * a + b * b + c * c;
     float s = std::sqrt(s2);
-    float sin_z = std::abs(c) / s;
-    float th = std::asin(sin_z) / M_PI * 180;
 
     Plane pl;
     pl.para = coefficients->values;
-    pl.theta = th;
+    pl.direction = std::atan2(b, a) / M_PI * 180;
+    pl.inclination = std::atan2(s, c) / M_PI * 180;
     pl.area = it->indices.size();
     pl.inner_points = ply_points;
 
@@ -412,14 +411,23 @@ bool GenerateDEM(const std::string& input_path,
     max_zz = std::max(xyz_p(2), max_zz);
   }
 
-  double reso = 0.02;
+  double reso = 0.04;
   Bitmap bitmap;
   int width = static_cast<int>((max_xx - min_xx) / reso + 1);
   int height = static_cast<int>((max_yy - min_yy) / reso + 1);
+  int bar_width = width * 0.4;
+  width += bar_width;
   int houdu = static_cast<int>((max_zz - min_zz) / reso + 1);
   bitmap.Allocate(width, height, true);
   std::vector<std::vector<float>> d_list(height,
                                          std::vector<float>(width, min_d));
+
+  const BitmapColor<uint8_t> white_color(255, 255, 255);
+  for (int x = 0; x < width; ++x) {
+    for (int y = 0; y < height; ++y) {
+      bitmap.SetPixel(x, y, white_color);
+    }
+  }
 
   std::cout << "x: " << min_xx << " " << max_xx << std::endl;
   std::cout << "y: " << min_yy << " " << max_yy << std::endl;
@@ -427,6 +435,30 @@ bool GenerateDEM(const std::string& input_path,
   std::cout << "d: " << min_d << " " << max_d << std::endl;
   std::cout << "w : " << width << " h :  " << height << " z : " << houdu
             << std::endl;
+
+  int block_w = static_cast<int>(width * 0.06);
+  int block_h = static_cast<int>(height * 0.06);
+
+  // Draw bar
+  cv::Mat image(height, bar_width, CV_8UC3, cv::Scalar(255, 255, 255));
+  for (int i = 0; i < 10; i++) {
+    float gray = static_cast<float>(i) / 10;
+    std::string dis = std::to_string(gray * (max_d - min_d));
+    cv::Rect r(10, 10 + block_h * i, block_w, block_h);
+    cv::Scalar c(255 * JetColormap::Red(gray), 255 * JetColormap::Green(gray),
+                 255 * JetColormap::Blue(gray));
+    cv::rectangle(image, r, c, -1);
+    cv::putText(image, dis, cv::Point(20 + block_w, 12 + block_h * (i + 1)),
+                cv::FONT_HERSHEY_SIMPLEX, 0.02 / reso, cv::Scalar(0, 0, 0));
+  }
+
+  for (int x = 0; x < bar_width; x++) {
+    for (int y = 0; y < height; y++) {
+      cv::Vec3b c = image.at<cv::Vec3b>(y, x);
+      const BitmapColor<float> color(c[0], c[1], c[2]);
+      bitmap.SetPixel(width - bar_width + x, y, color.Cast<uint8_t>());
+    }
+  }
 
   for (int i = 0; i < point_cloud->points.size(); ++i) {
     double x = (*point_cloud)[i].x;

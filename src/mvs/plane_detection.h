@@ -6,10 +6,13 @@
 #include <ctime>
 #include <float.h>
 #include <iostream>
+#include <vector>
 
 #include "util/bitmap.h"
 #include "util/ply.h"
 
+#include <opencv2/highgui.hpp>>
+#include <opencv2/opencv.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
@@ -28,13 +31,13 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <vector>
 
 namespace colmap {
 namespace mvs {
 struct Plane {
   std::vector<float> para;
-  float theta;
+  float direction;
+  float inclination;
   float area;
   std::vector<PlyPoint> inner_points;
 };

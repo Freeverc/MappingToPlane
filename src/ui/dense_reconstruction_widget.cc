@@ -301,8 +301,9 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
                      << "b"
                      << "c"
                      << "d"
-                     << "theta"
-                     << "area"
+                     << "倾向"
+                     << "倾角"
+                     << "面积"
                      << "平面";
 
   plane_table_widget_ = new QTableWidget(this);
@@ -431,6 +432,7 @@ void DenseReconstructionWidget::PlaneDetection() {
 
           mvs::PlaneDetection(plane_detection_options, workspace_path,
                               workspace_path, plane_points_, plane_list_);
+
           write_plane_points_action_->trigger();
         });
   }
@@ -449,9 +451,16 @@ void DenseReconstructionWidget::DEM() {
           std::vector<PlyPoint> plane_points;
 
           mvs::GenerateDEM(workspace_path, workspace_path);
-          write_plane_points_action_->trigger();
         });
-    image_viewer_widget_->ReadAndShow(JoinPaths(workspace_path, kDEMFileName));
+
+    int reply = QMessageBox::question(
+        this, "", tr("高程图已保存到工作空间，是否可视化高程图?"),
+        QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+      image_viewer_widget_->ReadAndShow(
+          JoinPaths(workspace_path, kDEMFileName));
+    }
   }
 }
 
@@ -600,7 +609,8 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     float b = plane_list_[i].para[1];
     float c = plane_list_[i].para[2];
     float d = plane_list_[i].para[3];
-    float theta = plane_list_[i].theta;
+    float direction = plane_list_[i].direction;
+    float inclination = plane_list_[i].inclination;
     float area = plane_list_[i].area;
 
     QTableWidgetItem* a_item =
@@ -619,20 +629,24 @@ void DenseReconstructionWidget::RefreshWorkspace() {
         new QTableWidgetItem(QString::fromStdString(std::to_string(d)));
     plane_table_widget_->setItem(i, 3, d_item);
 
-    QTableWidgetItem* theta_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(theta)));
-    plane_table_widget_->setItem(i, 4, theta_item);
+    QTableWidgetItem* direction_item =
+        new QTableWidgetItem(QString::fromStdString(std::to_string(direction)));
+    plane_table_widget_->setItem(i, 4, direction_item);
+
+    QTableWidgetItem* inclination_item = new QTableWidgetItem(
+        QString::fromStdString(std::to_string(inclination)));
+    plane_table_widget_->setItem(i, 5, inclination_item);
 
     QTableWidgetItem* area_item =
         new QTableWidgetItem(QString::fromStdString(std::to_string(area)));
-    plane_table_widget_->setItem(i, 5, area_item);
+    plane_table_widget_->setItem(i, 6, area_item);
 
     QPushButton* plane_button = new QPushButton("显示平面");
     connect(plane_button, &QPushButton::released, [this, i, a, b, c, d]() {
       main_window_->model_viewer_widget_->ShowPlane(i, a, b, c, d);
     });
 
-    plane_table_widget_->setCellWidget(i, 6, plane_button);
+    plane_table_widget_->setCellWidget(i, 7, plane_button);
 
     // table_widget_->setCellWidget(
     //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));
@@ -660,11 +674,7 @@ void DenseReconstructionWidget::RefreshWorkspace() {
 
 void DenseReconstructionWidget::WriteFusedPoints() {
   const int reply = QMessageBox::question(
-      this, "",
-      tr("Do you want to visualize the point cloud? Otherwise, to visualize "
-         "the reconstructed dense point cloud later, navigate to the "
-         "<i>dense</i> sub-folder in your workspace with <i>File > Import "
-         "model from...</i>."),
+      this, "", tr("稠密点云已保存到工作空间，是否可视化稠密点云?"),
       QMessageBox::Yes | QMessageBox::No);
   if (reply == QMessageBox::Yes) {
     const size_t reconstruction_idx =
@@ -719,11 +729,7 @@ void DenseReconstructionWidget::WritePlanePoints() {
   // }
 
   const int reply = QMessageBox::question(
-      this, "",
-      tr("Do you want to visualize the point cloud? Otherwise, to visualize "
-         "the reconstructed dense point cloud later, navigate to the "
-         "<i>dense</i> sub-folder in your workspace with <i>File > Import "
-         "model from...</i>."),
+      this, "", tr("平面分割点云已保存到工作空间，是否可视化平面分割点云?"),
       QMessageBox::Yes | QMessageBox::No);
 
   if (reply == QMessageBox::Yes) {
@@ -749,10 +755,7 @@ void DenseReconstructionWidget::WritePlanePoints() {
 }
 
 void DenseReconstructionWidget::ShowMeshingInfo() {
-  QMessageBox::information(
-      this, "",
-      tr("To visualize the meshed model, you must use an external viewer such "
-         "as Meshlab. The model is located in the workspace folder."));
+  QMessageBox::information(this, "", tr("请使用Meshlab软件可视化网格"));
 }
 
 QWidget* DenseReconstructionWidget::GenerateTableButtonWidget(
