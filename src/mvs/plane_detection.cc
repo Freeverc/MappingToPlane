@@ -481,7 +481,7 @@ bool GenerateDEM(const std::string& input_path,
     }
 
     if (dis > d_list[y_id][x_id]) {
-      const float gray = (dis - min_d) / (max_d - min_d);
+      const float gray = 1 - (dis - min_d) / (max_d - min_d);
       const BitmapColor<float> color(255 * JetColormap::Red(gray),
                                      255 * JetColormap::Green(gray),
                                      255 * JetColormap::Blue(gray));
