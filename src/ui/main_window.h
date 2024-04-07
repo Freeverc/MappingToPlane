@@ -113,6 +113,7 @@ class MainWindow : public QMainWindow {
 
   void ImportPointCloud();
   void PointCloudStitch();
+  void ExportPointCloud();
   void Render();
   void RenderNow();
   void RenderToggle();
@@ -219,6 +220,7 @@ class MainWindow : public QMainWindow {
   QAction* action_render_toggle_;
   QAction* action_render_import_;
   QAction* action_render_stitch_;
+  QAction* action_render_export_;
   QAction* action_render_reset_view_;
   QAction* action_render_options_;
 
@@ -246,5 +248,7 @@ class MainWindow : public QMainWindow {
 };
 
 }  // namespace colmap
+
+int RunIcp(int argc, char** argv);
 
 #endif  // COLMAP_SRC_UI_MAIN_WINDOW_H_

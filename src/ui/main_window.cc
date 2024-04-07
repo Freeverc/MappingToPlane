@@ -36,7 +36,9 @@
 #include "util/version.h"
 
 #include <pcl/common/transforms.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
@@ -311,6 +313,11 @@ void MainWindow::CreateActions() {
   connect(action_render_stitch_, &QAction::triggered, this,
           &MainWindow::PointCloudStitch);
 
+  action_render_export_ =
+      new QAction(QIcon(":/media/render-enabled.png"), tr("导出点云"), this);
+  connect(action_render_export_, &QAction::triggered, this,
+          &MainWindow::ExportPointCloud);
+
   action_render_reset_view_ =
       new QAction(QIcon(":/media/render-reset-view.png"), tr("重置"), this);
   connect(action_render_reset_view_, &QAction::triggered, model_viewer_widget_,
@@ -452,6 +459,7 @@ void MainWindow::CreateMenus() {
   render_menu->addAction(action_render_toggle_);
   render_menu->addAction(action_render_import_);
   render_menu->addAction(action_render_stitch_);
+  render_menu->addAction(action_render_export_);
   render_menu->addAction(action_render_reset_view_);
   render_menu->addAction(action_render_options_);
   menuBar()->addAction(render_menu->menuAction());
@@ -1068,12 +1076,6 @@ void MainWindow::DenseReconstruction() {
 }
 
 void MainWindow::ImportPointCloud() {
-  // const std::string import_point_cloud_path =
-  //     QFileDialog::getOpenFileName(this, tr("Select source..."), "",
-  //                                  tr("All Files (*)"))
-  //         .toUtf8()
-  //         .constData();
-
   QStringList ply_file_list = QFileDialog::getOpenFileNames(
       this, tr("Select one or more ply files to open"), "",
       tr("PointCloud (*.ply)"));
@@ -1123,38 +1125,51 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr ConvertToPointCloud(
 }
 
 void MainWindow::PointCloudStitch() {
+  if (ply_points_list_.size() < 2) return;
+
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_combined(
       new pcl::PointCloud<pcl::PointXYZRGB>);
 
-  for (const auto& ply_points : ply_points_list_) {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud =
-        ConvertToPointCloud(ply_points);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud =
+      ConvertToPointCloud(ply_points_list_[0]);
+  *cloud_combined += *target_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud =
+      ConvertToPointCloud(ply_points_list_[1]);
 
-    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
-    icp.setInputSource(cloud);
-    icp.setInputTarget(cloud_combined);
-    pcl::PointCloud<pcl::PointXYZRGB> Final;
-    icp.align(Final);
+  pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+  icp.setInputSource(source_cloud);
+  icp.setInputTarget(target_cloud);
+  pcl::PointCloud<pcl::PointXYZRGB> Final;
+  icp.align(Final);
 
-    Eigen::Matrix4d transformation =
-        icp.getFinalTransformation().cast<double>();
+  Eigen::Matrix4d transformation = icp.getFinalTransformation().cast<double>();
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud(
-        new pcl::PointCloud<pcl::PointXYZRGB>());
-    pcl::transformPointCloud(*cloud, *transformed_cloud, transformation);
-    std::cout << "has converged:" << icp.hasConverged()
-              << " score: " << icp.getFitnessScore() << std::endl;
-    std::cout << icp.getFinalTransformation() << std::endl;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud(
+      new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::transformPointCloud(*source_cloud, *transformed_cloud, transformation);
+  std::cout << "has converged:" << icp.hasConverged()
+            << " score: " << icp.getFitnessScore() << std::endl;
+  std::cout << icp.getFinalTransformation() << std::endl;
 
-    *cloud_combined += *transformed_cloud;
-  }
+  *cloud_combined += *transformed_cloud;
 
   const size_t reconstruction_idx = reconstruction_manager_.Add();
   auto& reconstruction = reconstruction_manager_.Get(reconstruction_idx);
+
+  ply_points_list_.emplace_back();
+  std::vector<PlyPoint>& ply_points = ply_points_list_.back();
   for (const auto& point : cloud_combined->points) {
     const Eigen::Vector3d xyz(point.x, point.y, point.z);
     reconstruction.AddPoint3D(xyz, Track(),
                               Eigen::Vector3ub(point.r, point.g, point.b));
+    PlyPoint ply_point;
+    ply_point.x = point.x;
+    ply_point.y = point.y;
+    ply_point.z = point.z;
+    ply_point.r = point.r;
+    ply_point.g = point.g;
+    ply_point.b = point.b;
+    ply_points.push_back(ply_point);
   }
 
   options_.render->min_track_len = 0;
@@ -1162,6 +1177,17 @@ void MainWindow::PointCloudStitch() {
   reconstruction_manager_widget_->SelectReconstruction(
       reconstruction_manager_.Size() - 1);
   RenderNow();
+}
+
+void MainWindow::ExportPointCloud() {
+  const std::string save_path =
+      QFileDialog::getSaveFileName(this, tr("Select destination..."), "",
+                                   "(*.ply);")
+          .toUtf8()
+          .constData();
+  if (ply_points_list_.size() > 0) {
+    WriteBinaryPlyPoints(save_path, ply_points_list_.back(), true);
+  }
 }
 
 void MainWindow::Render() {
@@ -1437,3 +1463,78 @@ void MainWindow::UpdateWindowTitle() {
 }
 
 }  // namespace colmap
+
+int RunIcp(int argc, char** argv) {
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+  if (pcl::io::loadPLYFile<pcl::PointXYZRGB>(
+          "/home/freeverc/Projects/Other/ReconstructionTool/Data/ws2/"
+          "points/points1_mini.ply",
+          *cloud1) == -1) {
+    PCL_ERROR("Couldn't read file test.ply \n");
+    return (-1);
+  }
+
+  std::cout << "Loaded " << cloud1->points.size() << std::endl;
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+  if (pcl::io::loadPLYFile<pcl::PointXYZRGB>(
+          "/home/freeverc/Projects/Other/ReconstructionTool/Data/ws2/"
+          "points/points2_mini.ply",
+          *cloud2) == -1) {
+    PCL_ERROR("Couldn't read file test.ply \n");
+    return (-1);
+  }
+  std::cout << "Loaded " << cloud2->points.size() << std::endl;
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1_filtered(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+  // 假设cloud已经被填充了数据
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2_filtered(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+
+  pcl::VoxelGrid<pcl::PointXYZRGB> sor;
+  sor.setInputCloud(cloud1);
+  sor.setLeafSize(0.1, 0.1, 0.1);  // 这里的参数可以根据你的需要进行调整
+  sor.filter(*cloud1_filtered);
+
+  sor.setInputCloud(cloud2);
+  sor.setLeafSize(0.1, 0.1, 0.1);  // 这里的参数可以根据你的需要进行调整
+  sor.filter(*cloud2_filtered);
+
+  std::cout << "Filtered 1 " << cloud1_filtered->points.size() << std::endl;
+  std::cout << "Filtered 2 " << cloud2_filtered->points.size() << std::endl;
+
+  pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+  icp.setInputSource(cloud2_filtered);
+  icp.setInputTarget(cloud1_filtered);
+  pcl::PointCloud<pcl::PointXYZRGB> Final;
+  icp.align(Final);
+
+  Eigen::Matrix4d transformation = icp.getFinalTransformation().cast<double>();
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud(
+      new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::transformPointCloud(*cloud2, *transformed_cloud, transformation);
+  std::cout << "has converged:" << icp.hasConverged()
+            << " score: " << icp.getFitnessScore() << std::endl;
+  std::cout << icp.getFinalTransformation() << std::endl;
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_combined(
+      new pcl::PointCloud<pcl::PointXYZRGB>());
+  *cloud_combined += *cloud1;
+  // *cloud_combined += *cloud2;
+  *cloud_combined += *transformed_cloud;
+  if (pcl::io::savePLYFile<pcl::PointXYZRGB>(
+          "/home/freeverc/Projects/Other/ReconstructionTool/Data/ws2/"
+          "points/conbined.ply",
+          *cloud_combined) == -1) {
+    PCL_ERROR("Couldn't write file test.ply \n");
+    return (-1);
+  }
+  std::cout << "Saved " << cloud_combined->points.size()
+            << " data points to test.ply." << std::endl;
+
+  return 0;
+}

@@ -2097,11 +2097,11 @@ int ShowHelp(
             << std::endl;
   std::cout << "  ..." << std::endl << std::endl;
 
-  std::cout << "Available commands:" << std::endl;
-  std::cout << "  help" << std::endl;
-  for (const auto& command : commands) {
-    std::cout << "  " << command.first << std::endl;
-  }
+  // std::cout << "Available commands:" << std::endl;
+  // std::cout << "  help" << std::endl;
+  // for (const auto& command : commands) {
+  //   std::cout << "  " << command.first << std::endl;
+  // }
   std::cout << std::endl;
 
   return EXIT_SUCCESS;
@@ -2112,6 +2112,7 @@ int main(int argc, char** argv) {
 
   std::vector<std::pair<std::string, command_func_t>> commands;
   commands.emplace_back("gui", &RunGraphicalUserInterface);
+  commands.emplace_back("icp", &RunIcp);
   commands.emplace_back("automatic_reconstructor", &RunAutomaticReconstructor);
   commands.emplace_back("bundle_adjuster", &RunBundleAdjuster);
   commands.emplace_back("color_extractor", &RunColorExtractor);
