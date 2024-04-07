@@ -32,6 +32,7 @@
 #ifndef COLMAP_SRC_UI_MAIN_WINDOW_H_
 #define COLMAP_SRC_UI_MAIN_WINDOW_H_
 
+#include <QStringList>
 #include <QtCore>
 #include <QtGui>
 #include <QtWidgets>
@@ -55,6 +56,7 @@
 #include "ui/render_options_widget.h"
 #include "ui/undistortion_widget.h"
 #include "util/bitmap.h"
+#include "util/ply.h"
 
 namespace colmap {
 
@@ -109,6 +111,8 @@ class MainWindow : public QMainWindow {
   void BundleAdjustment();
   void DenseReconstruction();
 
+  void ImportPointCloud();
+  void PointCloudStitch();
   void Render();
   void RenderNow();
   void RenderToggle();
@@ -213,6 +217,8 @@ class MainWindow : public QMainWindow {
   QAction* action_render_;
   QAction* action_render_now_;
   QAction* action_render_toggle_;
+  QAction* action_render_import_;
+  QAction* action_render_stitch_;
   QAction* action_render_reset_view_;
   QAction* action_render_options_;
 
@@ -235,6 +241,8 @@ class MainWindow : public QMainWindow {
 
   // Necessary for OS X to avoid duplicate closeEvents.
   bool window_closed_;
+
+  std::vector<std::vector<PlyPoint>> ply_points_list_;
 };
 
 }  // namespace colmap

@@ -216,70 +216,71 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
 
   QGridLayout* grid = new QGridLayout(this);
 
+  int button_id = 0;
   undistortion_button_ = new QPushButton(tr("去畸变"), this);
   connect(undistortion_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Undistort);
-  grid->addWidget(undistortion_button_, 0, 0, Qt::AlignLeft);
+  grid->addWidget(undistortion_button_, 0, button_id++, Qt::AlignLeft);
 
   stereo_button_ = new QPushButton(tr("深度图重建"), this);
   connect(stereo_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Stereo);
-  grid->addWidget(stereo_button_, 0, 1, Qt::AlignLeft);
+  grid->addWidget(stereo_button_, 0, button_id++, Qt::AlignLeft);
 
   fusion_button_ = new QPushButton(tr("点云融合"), this);
   connect(fusion_button_, &QPushButton::released, this,
           &DenseReconstructionWidget::Fusion);
-  grid->addWidget(fusion_button_, 0, 2, Qt::AlignLeft);
+  grid->addWidget(fusion_button_, 0, button_id++, Qt::AlignLeft);
 
-  plane_detection_button_ = new QPushButton(tr("平面提取"), this);
-  connect(plane_detection_button_, &QPushButton::released, this,
-          &DenseReconstructionWidget::PlaneDetection);
-  grid->addWidget(plane_detection_button_, 0, 3, Qt::AlignLeft);
+  // plane_detection_button_ = new QPushButton(tr("平面提取"), this);
+  // connect(plane_detection_button_, &QPushButton::released, this,
+  //         &DenseReconstructionWidget::PlaneDetection);
+  // grid->addWidget(plane_detection_button_, 0, 3, Qt::AlignLeft);
 
-  dem_button_ = new QPushButton(tr("高程图"), this);
-  connect(dem_button_, &QPushButton::released, this,
-          &DenseReconstructionWidget::DEM);
-  grid->addWidget(dem_button_, 0, 4, Qt::AlignLeft);
+  // dem_button_ = new QPushButton(tr("高程图"), this);
+  // connect(dem_button_, &QPushButton::released, this,
+  //         &DenseReconstructionWidget::DEM);
+  // grid->addWidget(dem_button_, 0, 4, Qt::AlignLeft);
 
-  delaunay_meshing_button_ = new QPushButton(tr("德劳内重建"), this);
-  connect(delaunay_meshing_button_, &QPushButton::released, this,
-          &DenseReconstructionWidget::DelaunayMeshing);
-  grid->addWidget(delaunay_meshing_button_, 0, 5, Qt::AlignLeft);
+  // delaunay_meshing_button_ = new QPushButton(tr("德劳内重建"), this);
+  // connect(delaunay_meshing_button_, &QPushButton::released, this,
+  //         &DenseReconstructionWidget::DelaunayMeshing);
+  // grid->addWidget(delaunay_meshing_button_, 0, 3, Qt::AlignLeft);
 
-  poisson_meshing_button_ = new QPushButton(tr("泊松重建"), this);
-  connect(poisson_meshing_button_, &QPushButton::released, this,
-          &DenseReconstructionWidget::PoissonMeshing);
-  grid->addWidget(poisson_meshing_button_, 0, 6, Qt::AlignLeft);
+  // poisson_meshing_button_ = new QPushButton(tr("泊松重建"), this);
+  // connect(poisson_meshing_button_, &QPushButton::released, this,
+  //         &DenseReconstructionWidget::PoissonMeshing);
+  // grid->addWidget(poisson_meshing_button_, 0, 6, Qt::AlignLeft);
 
   QPushButton* options_button = new QPushButton(tr("选项"), this);
   connect(options_button, &QPushButton::released, options_widget_,
           &OptionsWidget::show);
-  grid->addWidget(options_button, 0, 7, Qt::AlignLeft);
+  grid->addWidget(options_button, 0, button_id++, Qt::AlignLeft);
 
   QLabel* workspace_path_label = new QLabel("工作路径", this);
-  grid->addWidget(workspace_path_label, 0, 8, Qt::AlignRight);
+  grid->addWidget(workspace_path_label, 0, button_id++, Qt::AlignRight);
 
   workspace_path_text_ = new QLineEdit(this);
-  grid->addWidget(workspace_path_text_, 0, 9, Qt::AlignRight);
+  grid->addWidget(workspace_path_text_, 0, button_id++, Qt::AlignRight);
   connect(workspace_path_text_, &QLineEdit::textChanged, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
 
   QPushButton* refresh_path_button = new QPushButton(tr("刷新"), this);
   connect(refresh_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::RefreshWorkspace, Qt::QueuedConnection);
-  grid->addWidget(refresh_path_button, 0, 10, Qt::AlignRight);
+  grid->addWidget(refresh_path_button, 0, button_id++, Qt::AlignRight);
 
   QPushButton* workspace_path_button = new QPushButton(tr("选择"), this);
   connect(workspace_path_button, &QPushButton::released, this,
           &DenseReconstructionWidget::SelectWorkspacePath,
           Qt::QueuedConnection);
-  grid->addWidget(workspace_path_button, 0, 11, Qt::AlignRight);
+  grid->addWidget(workspace_path_button, 0, button_id++, Qt::AlignRight);
 
   QPushButton* save_button = new QPushButton(tr("保存"), this);
-  grid->addWidget(save_button, 0, 12, Qt::AlignRight);
+  grid->addWidget(save_button, 0, button_id++, Qt::AlignRight);
 
   QPushButton* quit_button = new QPushButton(tr("退出"), this);
-  grid->addWidget(quit_button, 0, 13, Qt::AlignRight);
+  grid->addWidget(quit_button, 0, button_id++, Qt::AlignRight);
 
   QStringList table_header;
   table_header << "图像名称"
@@ -306,18 +307,18 @@ DenseReconstructionWidget::DenseReconstructionWidget(MainWindow* main_window,
                      << "面积"
                      << "平面";
 
-  plane_table_widget_ = new QTableWidget(this);
-  plane_table_widget_->setColumnCount(plane_table_header.size());
-  plane_table_widget_->setHorizontalHeaderLabels(plane_table_header);
+  // plane_table_widget_ = new QTableWidget(this);
+  // plane_table_widget_->setColumnCount(plane_table_header.size());
+  // plane_table_widget_->setHorizontalHeaderLabels(plane_table_header);
 
-  plane_table_widget_->setShowGrid(true);
-  plane_table_widget_->setSelectionBehavior(QAbstractItemView::SelectRows);
-  plane_table_widget_->setSelectionMode(QAbstractItemView::SingleSelection);
-  plane_table_widget_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  plane_table_widget_->verticalHeader()->setDefaultSectionSize(25);
+  // plane_table_widget_->setShowGrid(true);
+  // plane_table_widget_->setSelectionBehavior(QAbstractItemView::SelectRows);
+  // plane_table_widget_->setSelectionMode(QAbstractItemView::SingleSelection);
+  // plane_table_widget_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  // plane_table_widget_->verticalHeader()->setDefaultSectionSize(25);
 
-  grid->addWidget(image_table_widget_, 1, 0, 1, 5);
-  grid->addWidget(plane_table_widget_, 1, 5, 1, 10);
+  grid->addWidget(image_table_widget_, 1, 0, 1, button_id);
+  // grid->addWidget(plane_table_widget_, 1, 5, 1, 10);
 
   // grid->setColumnStretch(4, 1);
 
@@ -543,10 +544,10 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     undistortion_button_->setEnabled(false);
     stereo_button_->setEnabled(false);
     fusion_button_->setEnabled(false);
-    plane_detection_button_->setEnabled(false);
-    dem_button_->setEnabled(false);
-    poisson_meshing_button_->setEnabled(false);
-    delaunay_meshing_button_->setEnabled(false);
+    // plane_detection_button_->setEnabled(false);
+    // dem_button_->setEnabled(false);
+    // poisson_meshing_button_->setEnabled(false);
+    // delaunay_meshing_button_->setEnabled(false);
     return;
   }
 
@@ -565,10 +566,10 @@ void DenseReconstructionWidget::RefreshWorkspace() {
   } else {
     stereo_button_->setEnabled(false);
     fusion_button_->setEnabled(false);
-    plane_detection_button_->setEnabled(false);
-    dem_button_->setEnabled(false);
-    poisson_meshing_button_->setEnabled(false);
-    delaunay_meshing_button_->setEnabled(false);
+    // plane_detection_button_->setEnabled(false);
+    // dem_button_->setEnabled(false);
+    // poisson_meshing_button_->setEnabled(false);
+    // delaunay_meshing_button_->setEnabled(false);
     return;
   }
 
@@ -603,73 +604,74 @@ void DenseReconstructionWidget::RefreshWorkspace() {
     // table_widget_->setItem(i, 3, src_images_item);
   }
 
-  plane_table_widget_->setRowCount(plane_list_.size());
-  for (size_t i = 0; i < plane_list_.size(); ++i) {
-    float a = plane_list_[i].para[0];
-    float b = plane_list_[i].para[1];
-    float c = plane_list_[i].para[2];
-    float d = plane_list_[i].para[3];
-    float direction = plane_list_[i].direction;
-    float inclination = plane_list_[i].inclination;
-    float area = plane_list_[i].area;
+  // plane_table_widget_->setRowCount(plane_list_.size());
+  // for (size_t i = 0; i < plane_list_.size(); ++i) {
+  //   float a = plane_list_[i].para[0];
+  //   float b = plane_list_[i].para[1];
+  //   float c = plane_list_[i].para[2];
+  //   float d = plane_list_[i].para[3];
+  //   float direction = plane_list_[i].direction;
+  //   float inclination = plane_list_[i].inclination;
+  //   float area = plane_list_[i].area;
 
-    QTableWidgetItem* a_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(a)));
-    plane_table_widget_->setItem(i, 0, a_item);
+  //   QTableWidgetItem* a_item =
+  //       new QTableWidgetItem(QString::fromStdString(std::to_string(a)));
+  //   plane_table_widget_->setItem(i, 0, a_item);
 
-    QTableWidgetItem* b_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(b)));
-    plane_table_widget_->setItem(i, 1, b_item);
+  //   QTableWidgetItem* b_item =
+  //       new QTableWidgetItem(QString::fromStdString(std::to_string(b)));
+  //   plane_table_widget_->setItem(i, 1, b_item);
 
-    QTableWidgetItem* c_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(c)));
-    plane_table_widget_->setItem(i, 2, c_item);
+  //   QTableWidgetItem* c_item =
+  //       new QTableWidgetItem(QString::fromStdString(std::to_string(c)));
+  //   plane_table_widget_->setItem(i, 2, c_item);
 
-    QTableWidgetItem* d_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(d)));
-    plane_table_widget_->setItem(i, 3, d_item);
+  //   QTableWidgetItem* d_item =
+  //       new QTableWidgetItem(QString::fromStdString(std::to_string(d)));
+  //   plane_table_widget_->setItem(i, 3, d_item);
 
-    QTableWidgetItem* direction_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(direction)));
-    plane_table_widget_->setItem(i, 4, direction_item);
+  //   QTableWidgetItem* direction_item =
+  //       new
+  //       QTableWidgetItem(QString::fromStdString(std::to_string(direction)));
+  //   plane_table_widget_->setItem(i, 4, direction_item);
 
-    QTableWidgetItem* inclination_item = new QTableWidgetItem(
-        QString::fromStdString(std::to_string(inclination)));
-    plane_table_widget_->setItem(i, 5, inclination_item);
+  //   QTableWidgetItem* inclination_item = new QTableWidgetItem(
+  //       QString::fromStdString(std::to_string(inclination)));
+  //   plane_table_widget_->setItem(i, 5, inclination_item);
 
-    QTableWidgetItem* area_item =
-        new QTableWidgetItem(QString::fromStdString(std::to_string(area)));
-    plane_table_widget_->setItem(i, 6, area_item);
+  //   QTableWidgetItem* area_item =
+  //       new QTableWidgetItem(QString::fromStdString(std::to_string(area)));
+  //   plane_table_widget_->setItem(i, 6, area_item);
 
-    QPushButton* plane_button = new QPushButton("显示平面");
-    connect(plane_button, &QPushButton::released, [this, i, a, b, c, d]() {
-      main_window_->model_viewer_widget_->ShowPlane(i, a, b, c, d);
-    });
+  //   QPushButton* plane_button = new QPushButton("显示平面");
+  //   connect(plane_button, &QPushButton::released, [this, i, a, b, c, d]() {
+  //     main_window_->model_viewer_widget_->ShowPlane(i, a, b, c, d);
+  //   });
 
-    plane_table_widget_->setCellWidget(i, 7, plane_button);
+  //   plane_table_widget_->setCellWidget(i, 7, plane_button);
 
-    // table_widget_->setCellWidget(
-    //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));
-    // image_table_widget_->setCellWidget(
-    //     i, 2, GenerateTableButtonWidget(image_name, "geometric"));
+  //   // table_widget_->setCellWidget(
+  //   //     i, 2, GenerateTableButtonWidget(image_name, "photometric"));
+  //   // image_table_widget_->setCellWidget(
+  //   //     i, 2, GenerateTableButtonWidget(image_name, "geometric"));
 
-    // QTableWidgetItem* src_images_item =
-    //     new QTableWidgetItem(QString::fromStdString(src_images));
-    // table_widget_->setItem(i, 3, src_images_item);
-  }
+  //   // QTableWidgetItem* src_images_item =
+  //   //     new QTableWidgetItem(QString::fromStdString(src_images));
+  //   // table_widget_->setItem(i, 3, src_images_item);
+  // }
 
   image_table_widget_->resizeColumnsToContents();
 
   fusion_button_->setEnabled(photometric_done_ || geometric_done_);
 
-  plane_detection_button_->setEnabled(
-      ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
-  dem_button_->setEnabled(
-      ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
-  poisson_meshing_button_->setEnabled(
-      ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
-  delaunay_meshing_button_->setEnabled(
-      ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
+  // plane_detection_button_->setEnabled(
+  //     ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
+  // dem_button_->setEnabled(
+  //     ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
+  // poisson_meshing_button_->setEnabled(
+  //     ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
+  // delaunay_meshing_button_->setEnabled(
+  //     ExistsFile(JoinPaths(workspace_path, kFusedFileName)));
 }
 
 void DenseReconstructionWidget::WriteFusedPoints() {
@@ -710,10 +712,10 @@ void DenseReconstructionWidget::WriteFusedPoints() {
     mvs::WritePointsVisibility(output_path + ".vis", fused_points_visibility_);
     fused_points_ = {};
     fused_points_visibility_ = {};
-    plane_detection_button_->setEnabled(true);
-    dem_button_->setEnabled(true);
-    poisson_meshing_button_->setEnabled(true);
-    delaunay_meshing_button_->setEnabled(true);
+    // plane_detection_button_->setEnabled(true);
+    // dem_button_->setEnabled(true);
+    // poisson_meshing_button_->setEnabled(true);
+    // delaunay_meshing_button_->setEnabled(true);
   });
 }
 

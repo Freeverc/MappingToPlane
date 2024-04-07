@@ -90,7 +90,7 @@ class DenseReconstructionWidget : public QWidget {
   ImageViewerWidget* image_viewer_widget_;
   QLineEdit* workspace_path_text_;
   QTableWidget* image_table_widget_;
-  QTableWidget* plane_table_widget_;
+  // QTableWidget* plane_table_widget_;
   QPushButton* undistortion_button_;
   QPushButton* stereo_button_;
   QPushButton* fusion_button_;

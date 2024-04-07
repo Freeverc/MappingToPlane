@@ -35,6 +35,12 @@
 
 #include "util/version.h"
 
+#include <pcl/common/transforms.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
+
 namespace colmap {
 
 MainWindow::MainWindow(const OptionManager& options)
@@ -291,9 +297,19 @@ void MainWindow::CreateActions() {
   //////////////////////////////////////////////////////////////////////////////
 
   action_render_toggle_ =
-      new QAction(QIcon(":/media/render-enabled.png"), tr("禁用渲染"), this);
+      new QAction(QIcon(":/media/render-enabled.png"), tr("禁用可视化"), this);
   connect(action_render_toggle_, &QAction::triggered, this,
           &MainWindow::RenderToggle);
+
+  action_render_import_ =
+      new QAction(QIcon(":/media/render-enabled.png"), tr("导入点云"), this);
+  connect(action_render_import_, &QAction::triggered, this,
+          &MainWindow::ImportPointCloud);
+
+  action_render_stitch_ =
+      new QAction(QIcon(":/media/render-enabled.png"), tr("拼接点云"), this);
+  connect(action_render_stitch_, &QAction::triggered, this,
+          &MainWindow::PointCloudStitch);
 
   action_render_reset_view_ =
       new QAction(QIcon(":/media/render-reset-view.png"), tr("重置"), this);
@@ -301,7 +317,7 @@ void MainWindow::CreateActions() {
           &ModelViewerWidget::ResetView);
 
   action_render_options_ =
-      new QAction(QIcon(":/media/render-options.png"), tr("渲染选项"), this);
+      new QAction(QIcon(":/media/render-options.png"), tr("可视化选项"), this);
   connect(action_render_options_, &QAction::triggered, this,
           &MainWindow::RenderOptions);
 
@@ -432,8 +448,10 @@ void MainWindow::CreateMenus() {
   // reconstruction_menu->addAction(action_dense_reconstruction_);
   // menuBar()->addAction(reconstruction_menu->menuAction());
 
-  QMenu* render_menu = new QMenu(tr("渲染"), this);
+  QMenu* render_menu = new QMenu(tr("可视化"), this);
   render_menu->addAction(action_render_toggle_);
+  render_menu->addAction(action_render_import_);
+  render_menu->addAction(action_render_stitch_);
   render_menu->addAction(action_render_reset_view_);
   render_menu->addAction(action_render_options_);
   menuBar()->addAction(render_menu->menuAction());
@@ -1049,6 +1067,103 @@ void MainWindow::DenseReconstruction() {
   }
 }
 
+void MainWindow::ImportPointCloud() {
+  // const std::string import_point_cloud_path =
+  //     QFileDialog::getOpenFileName(this, tr("Select source..."), "",
+  //                                  tr("All Files (*)"))
+  //         .toUtf8()
+  //         .constData();
+
+  QStringList ply_file_list = QFileDialog::getOpenFileNames(
+      this, tr("Select one or more ply files to open"), "",
+      tr("PointCloud (*.ply)"));
+
+  for (const auto& q_ply_file : ply_file_list) {
+    std::string ply_path = q_ply_file.toStdString();
+    // Selection canceled?
+    if (ply_path == "") {
+      continue;
+    }
+
+    const size_t reconstruction_idx = reconstruction_manager_.Add();
+    auto& reconstruction = reconstruction_manager_.Get(reconstruction_idx);
+
+    ply_points_list_.emplace_back(ReadPly(ply_path));
+    for (const auto& point : ply_points_list_.back()) {
+      const Eigen::Vector3d xyz(point.x, point.y, point.z);
+      reconstruction.AddPoint3D(xyz, Track(),
+                                Eigen::Vector3ub(point.r, point.g, point.b));
+    }
+  }
+
+  options_.render->min_track_len = 0;
+  reconstruction_manager_widget_->Update();
+  reconstruction_manager_widget_->SelectReconstruction(
+      reconstruction_manager_.Size() - 1);
+  RenderNow();
+}
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr ConvertToPointCloud(
+    const std::vector<PlyPoint>& ply_points) {
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+  for (const auto& point : ply_points) {
+    pcl::PointXYZRGB pcl_point;
+    pcl_point.x = point.x;
+    pcl_point.y = point.y;
+    pcl_point.z = point.z;
+    pcl_point.r = point.r;
+    pcl_point.g = point.g;
+    pcl_point.b = point.b;
+    cloud->points.push_back(pcl_point);
+  }
+  cloud->width = static_cast<uint32_t>(cloud->points.size());
+  cloud->height = 1;
+  return cloud;
+}
+
+void MainWindow::PointCloudStitch() {
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_combined(
+      new pcl::PointCloud<pcl::PointXYZRGB>);
+
+  for (const auto& ply_points : ply_points_list_) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud =
+        ConvertToPointCloud(ply_points);
+
+    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+    icp.setInputSource(cloud);
+    icp.setInputTarget(cloud_combined);
+    pcl::PointCloud<pcl::PointXYZRGB> Final;
+    icp.align(Final);
+
+    Eigen::Matrix4d transformation =
+        icp.getFinalTransformation().cast<double>();
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud(
+        new pcl::PointCloud<pcl::PointXYZRGB>());
+    pcl::transformPointCloud(*cloud, *transformed_cloud, transformation);
+    std::cout << "has converged:" << icp.hasConverged()
+              << " score: " << icp.getFitnessScore() << std::endl;
+    std::cout << icp.getFinalTransformation() << std::endl;
+
+    *cloud_combined += *transformed_cloud;
+  }
+
+  const size_t reconstruction_idx = reconstruction_manager_.Add();
+  auto& reconstruction = reconstruction_manager_.Get(reconstruction_idx);
+  for (const auto& point : cloud_combined->points) {
+    const Eigen::Vector3d xyz(point.x, point.y, point.z);
+    reconstruction.AddPoint3D(xyz, Track(),
+                              Eigen::Vector3ub(point.r, point.g, point.b));
+  }
+
+  options_.render->min_track_len = 0;
+  reconstruction_manager_widget_->Update();
+  reconstruction_manager_widget_->SelectReconstruction(
+      reconstruction_manager_.Size() - 1);
+  RenderNow();
+}
+
 void MainWindow::Render() {
   if (reconstruction_manager_.Size() == 0) {
     return;
@@ -1270,13 +1385,13 @@ void MainWindow::RenderToggle() {
     render_options_widget_->automatic_update = false;
     render_options_widget_->counter = 0;
     action_render_toggle_->setIcon(QIcon(":/media/render-disabled.png"));
-    action_render_toggle_->setText(tr("开启渲染"));
+    action_render_toggle_->setText(tr("开启可视化"));
   } else {
     render_options_widget_->automatic_update = true;
     render_options_widget_->counter = 0;
     Render();
     action_render_toggle_->setIcon(QIcon(":/media/render-enabled.png"));
-    action_render_toggle_->setText(tr("禁用渲染"));
+    action_render_toggle_->setText(tr("禁用可视化"));
   }
 }
 

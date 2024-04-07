@@ -84,8 +84,6 @@ if(OPENMP_ENABLED)
     find_package(OpenMP QUIET)
 endif()
 
-find_package(Ceres REQUIRED)
-
 find_package(Boost REQUIRED COMPONENTS
              program_options
              filesystem
@@ -94,7 +92,14 @@ find_package(Boost REQUIRED COMPONENTS
              system
              unit_test_framework)
 
+set(Eigen3_DIR "/usr/lib/cmake/eigen3")
 find_package(Eigen3 REQUIRED)
+
+if(Eigen3_Found)
+    message(STATUS "Eigen3 directory: ${Eigen3_DIR}")
+endif()
+
+find_package(Ceres REQUIRED)
 
 find_package(FreeImage REQUIRED)
 

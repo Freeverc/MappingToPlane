@@ -99,6 +99,10 @@ void ProjectWidget::SetDatabasePath(const std::string& path) {
   database_path_text_->setText(QString::fromStdString(path));
 }
 
+// void ProjectWidget::SetWorkspacePath(const std::string& path) {
+//   workspace_path_text_->setText(QString::fromStdString(path));
+// }
+
 void ProjectWidget::SetImagePath(const std::string& path) {
   image_path_text_->setText(QString::fromStdString(path));
 }

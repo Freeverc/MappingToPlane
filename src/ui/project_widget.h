@@ -50,6 +50,7 @@ class ProjectWidget : public QWidget {
   std::string GetDatabasePath() const;
   std::string GetImagePath() const;
   void SetDatabasePath(const std::string& path);
+  // void SetWorkspacePath(const std::string& path);
   void SetImagePath(const std::string& path);
 
  private:
@@ -65,6 +66,7 @@ class ProjectWidget : public QWidget {
   bool prev_selected_;
 
   // Text boxes that hold the currently selected paths.
+  // QLineEdit* workspace_path_text_;
   QLineEdit* database_path_text_;
   QLineEdit* image_path_text_;
 };
